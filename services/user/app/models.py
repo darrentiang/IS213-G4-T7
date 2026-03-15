@@ -1,8 +1,27 @@
-# defines your database schema, each class represents a table
-# defines the entity/table owned by this atomic service
-
 from app.db import db
 
+
 class User(db.Model):
-    user_id = db.Column(db.Integer, primary_key=True)
-    
+    __tablename__ = 'users'
+
+    user_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    email = db.Column(db.String(255), nullable=False)
+    name = db.Column(db.String(255), nullable=False)
+    stripe_id = db.Column(db.String(255), nullable=False)
+    created_at = db.Column(
+        db.DateTime, nullable=False, server_default=db.func.now()
+    )
+
+    def __init__(self, email, name, stripe_id):
+        self.email = email
+        self.name = name
+        self.stripe_id = stripe_id
+
+    def json(self):
+        return {
+            "user_id": self.user_id,
+            "email": self.email,
+            "name": self.name,
+            "stripe_id": self.stripe_id,
+            "created_at": self.created_at.isoformat()
+        }

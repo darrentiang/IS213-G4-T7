@@ -1,0 +1,16 @@
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./services/bid/bid.sql:/docker-entrypoint-initdb.d/bid.sql
+
+  bid:
+    build: ./services/bid
+    ports:
+      - "5002:5002"
+    depends_on:
+      - mysql

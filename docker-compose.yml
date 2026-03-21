@@ -5,6 +5,8 @@ volumes:
     name: bidboard_user_db_data
   bid_db_data:
     name: bidboard_bid_db_data
+  listing_db_data:
+    name: bidboard_listing_db_data
 
 networks:
   bidboard-net:
@@ -58,6 +60,28 @@ services:
       retries: 5
 
   ####################################
+  # MySQL: listing_db
+  ####################################
+  listing-db:
+    image: mysql:8.0
+    container_name: listing-db
+    restart: always
+    ports:
+      - "3309:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      - listing_db_data:/var/lib/mysql
+      - ./services/listing/listing.sql:/docker-entrypoint-initdb.d/listing.sql
+    networks:
+      - bidboard-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ####################################
   # User Service: Flask (port 5004)
   ####################################
   user:
@@ -72,6 +96,25 @@ services:
       - dbURL=mysql+mysqlconnector://root:root@user-db:3306/user_db
     depends_on:
       user-db:
+        condition: service_healthy
+    networks:
+      - bidboard-net
+
+  ####################################
+  # Listing Service: Flask (port 5001)
+  ####################################
+  listing:
+    build:
+      context: ./services/listing
+      dockerfile: Dockerfile
+    container_name: listing
+    restart: always
+    ports:
+      - "5001:5001"
+    environment:
+      - dbURL=mysql+mysqlconnector://root:root@listing-db:3306/listing_db
+    depends_on:
+      listing-db:
         condition: service_healthy
     networks:
       - bidboard-net

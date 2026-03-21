@@ -7,6 +7,8 @@ volumes:
     name: bidboard_bid_db_data
   listing_db_data:
     name: bidboard_listing_db_data
+  offer_db_data:
+    name: bidboard_offer_db_data
 
 networks:
   bidboard-net:
@@ -80,6 +82,28 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    
+  ####################################
+  # MySQL: offer_db
+  ####################################
+  offer-db:
+    image: mysql:8.0
+    container_name: offer-db
+    restart: always
+    ports:
+      - "3310:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      - offer_db_data:/var/lib/mysql
+      - ./services/offer/offer.sql:/docker-entrypoint-initdb.d/offer.sql
+    networks:
+      - bidboard-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   ####################################
   # User Service: Flask (port 5004)
@@ -138,6 +162,25 @@ services:
       - dbURL=mysql+mysqlconnector://root:root@bid-db:3306/bid_db
     depends_on:
       bid-db:
+        condition: service_healthy
+    networks:
+      - bidboard-net
+
+  ####################################
+  # Offer Service: Flask (port 5003)
+  ####################################
+  offer:
+    build:
+      context: ./services/offer
+      dockerfile: Dockerfile
+    container_name: offer
+    restart: always
+    ports:
+      - "5003:5003"
+    environment:
+      - dbURL=mysql+mysqlconnector://root:root@offer-db:3306/offer_db
+    depends_on:
+      offer-db:
         condition: service_healthy
     networks:
       - bidboard-net

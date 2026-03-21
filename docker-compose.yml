@@ -1,16 +1,112 @@
+volumes:
+  rabbitmq_data:
+    name: bidboard_rabbitmq_data
+  user_db_data:
+    name: bidboard_user_db_data
+  bid_db_data:
+    name: bidboard_bid_db_data
+
+networks:
+  bidboard-net:
+    driver: bridge
+    name: bidboard-net
+
 services:
-  mysql:
+
+  ####################################
+  # MySQL: user_db
+  ####################################
+  user-db:
     image: mysql:8.0
+    container_name: user-db
+    restart: always
+    ports:
+      - "3307:3306"
     environment:
       MYSQL_ROOT_PASSWORD: root
-    ports:
-      - "3306:3306"
     volumes:
-      - ./services/bid/bid.sql:/docker-entrypoint-initdb.d/bid.sql
+      - user_db_data:/var/lib/mysql
+      - ./services/user/user.sql:/docker-entrypoint-initdb.d/user.sql
+    networks:
+      - bidboard-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
+  ####################################
+  # MySQL: bid_db
+  ####################################
+  bid-db:
+    image: mysql:8.0
+    container_name: bid-db
+    restart: always
+    ports:
+      - "3308:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      - bid_db_data:/var/lib/mysql
+      - ./services/bid/bid.sql:/docker-entrypoint-initdb.d/bid.sql
+    networks:
+      - bidboard-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ####################################
+  # User Service: Flask (port 5004)
+  ####################################
+  user:
+    build:
+      context: ./services/user
+      dockerfile: Dockerfile
+    container_name: user
+    restart: always
+    ports:
+      - "5004:5004"
+    environment:
+      - dbURL=mysql+mysqlconnector://root:root@user-db:3306/user_db
+    depends_on:
+      user-db:
+        condition: service_healthy
+    networks:
+      - bidboard-net
+
+  ####################################
+  # Bid Service: Flask (port 5002)
+  ####################################
   bid:
-    build: ./services/bid
+    build:
+      context: ./services/bid
+      dockerfile: Dockerfile
+    container_name: bid
+    restart: always
     ports:
       - "5002:5002"
+    environment:
+      - dbURL=mysql+mysqlconnector://root:root@bid-db:3306/bid
     depends_on:
-      - mysql
+      bid-db:
+        condition: service_healthy
+    networks:
+      - bidboard-net
+
+  ####################################
+  # RabbitMQ: messaging broker
+  ####################################
+  rabbitmq:
+    image: rabbitmq:3-management
+    hostname: bidboard-rabbit
+    container_name: rabbitmq
+    restart: always
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - bidboard-net

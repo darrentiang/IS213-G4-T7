@@ -88,7 +88,7 @@ services:
     ports:
       - "5002:5002"
     environment:
-      - dbURL=mysql+mysqlconnector://root:root@bid-db:3306/bid
+      - dbURL=mysql+mysqlconnector://root:root@bid-db:3306/bid_db
     depends_on:
       bid-db:
         condition: service_healthy

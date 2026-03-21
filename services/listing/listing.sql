@@ -17,6 +17,6 @@ CREATE TABLE listings (
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-INSERT INTO listings (seller_id, title, description, image_url, listing_type, start_price, status) VALUES
-    (1, 'Vintage Guitar', 'A classic 1965 Fender Stratocaster', 'https://example.com/guitar.jpg', 'FIXED', 500.00, 'ACTIVE'),
-    (1, 'Rare Comic Book', 'First edition Spider-Man #1', 'https://example.com/comic.jpg', 'AUCTION', 200.00, 'SCHEDULED');
+-- INSERT INTO listings (seller_id, title, description, image_url, listing_type, start_price, status) VALUES
+--     (1, 'Vintage Guitar', 'A classic 1965 Fender Stratocaster', 'https://example.com/guitar.jpg', 'FIXED', 500.00, 'ACTIVE'),
+--     (1, 'Rare Comic Book', 'First edition Spider-Man #1', 'https://example.com/comic.jpg', 'AUCTION', 200.00, 'SCHEDULED');

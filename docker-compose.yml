@@ -113,9 +113,13 @@ services:
       - "5001:5001"
     environment:
       - dbURL=mysql+mysqlconnector://root:root@listing-db:3306/listing_db
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
     depends_on:
       listing-db:
         condition: service_healthy
+      rabbitmq:
+        condition: service_started
     networks:
       - bidboard-net
 

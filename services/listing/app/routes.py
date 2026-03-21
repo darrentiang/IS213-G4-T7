@@ -1,8 +1,11 @@
 # defines the API endpoints (HTTP routes)
 
+import pika
+from datetime import datetime
 from flask import Blueprint, request, jsonify
 from app.db import db
 from app.models import Listing
+from app.amqp_lib import publish_message
 
 listing_bp = Blueprint('listing', __name__)
 
@@ -48,6 +51,35 @@ def create_listing():
         )
         db.session.add(listing)
         db.session.commit()
+
+        # if AUCTION, publish events to RabbitMQ
+        if listing_type == 'AUCTION':
+            from flask import current_app
+            channel = current_app.config.get('AMQP_CHANNEL')
+            print(f"AMQP channel: {channel}")
+            if not channel:
+                print("WARNING: No AMQP channel available, skipping publish")
+
+            # publish listing.scheduled to market.events
+            publish_message(channel, "market.events", "listing.scheduled", {
+                "listingId": listing.listing_id,
+                "sellerId": listing.seller_id
+            })
+
+            # calculate TTL in milliseconds (time until start_time)
+            start_dt = datetime.fromisoformat(data['start_time'])
+            ttl_ms = max(int((start_dt - datetime.now()).total_seconds() * 1000), 0)
+
+            # publish auction.start to market.timers with TTL
+            publish_message(
+                channel, "", "market.timers",
+                {"listingId": listing.listing_id, "type": "auction.start"},
+                properties=pika.BasicProperties(
+                    delivery_mode=2,
+                    expiration=str(ttl_ms)
+                )
+            )
+            print(f"Timer 1 set: auction.start for listing {listing.listing_id} in {ttl_ms}ms")
 
         return jsonify({"code": 201, "data": listing.json()}), 201
 

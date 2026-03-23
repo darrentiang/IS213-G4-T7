@@ -147,6 +147,31 @@ services:
       - bidboard-net
 
   ####################################
+  # Dispatch Notification: composite (no port, consumer only)
+  ####################################
+  dispatch-notification:
+    build:
+      context: ./services/dispatch_notification
+      dockerfile: Dockerfile
+    container_name: dispatch-notification
+    restart: always
+    environment:
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - USER_SERVICE_URL=http://user:5004
+      - LISTING_SERVICE_URL=http://listing:5001
+      - NOTIFICATION_SERVICE_URL=http://notification:5006
+    depends_on:
+      rabbitmq:
+        condition: service_started
+      user:
+        condition: service_started
+      listing:
+        condition: service_started
+    networks:
+      - bidboard-net
+
+  ####################################
   # RabbitMQ: messaging broker
   ####################################
   rabbitmq:

@@ -1,8 +1,14 @@
 # defines the API endpoints (HTTP routes)
 
 from flask import Blueprint, request, jsonify
+from os import environ
 from app.db import db
 from app.models import Bid
+from app.amqp_lib import connect, publish_message
+from app import amqp_setup
+
+amqp_host = environ.get("RABBITMQ_HOST", "localhost")
+amqp_port = int(environ.get("RABBITMQ_PORT", 5672))
 
 # creates a "mini app" just for bid routes
 bid_bp = Blueprint('bid', __name__)
@@ -69,6 +75,20 @@ def create_bid():
         )
         db.session.add(bid)
         db.session.commit()
+
+        # Publish bid.placed to market.events exchange.
+        # We open a fresh connection for each publish because Flask handles
+        # requests concurrently and pika connections are not thread-safe.
+        connection, channel = connect(amqp_host, amqp_port)
+        amqp_setup.setup(channel) # ensure queues exist
+        publish_message(channel, "market.events", "bid.placed", {
+            "listingId": bid.listing_id,
+            "bidId": bid.bid_id,
+            "buyerId": bid.buyer_id,
+            "amount": float(bid.amount),
+            "prevHighestBuyerId": prev_highest_buyer_id
+        })
+        connection.close()
 
         return jsonify({"code": 201, "data": bid.json()}), 201
 

@@ -86,9 +86,9 @@ def handle_bid_placed(channel, method, properties, body):
         notif_response = requests.post(
             f"{NOTIFICATION_SERVICE_URL}/notifications",
             json={
-                "email": email,
+                "recipientEmail": email,
                 "subject": "You've been outbid!",
-                "message": f"Someone placed a higher bid of ${amount:.2f} on listing {listing_id}. Place a new bid to stay in the lead!"
+                "body": f"Someone placed a higher bid of ${amount:.2f} on listing {listing_id}. Place a new bid to stay in the lead!"
             }
         )
         notif_response.raise_for_status()
@@ -155,7 +155,7 @@ def handle_listing_event(channel, method, properties, body):
     try:
         notif_response = requests.post(
             f"{NOTIFICATION_SERVICE_URL}/notifications",
-            json={"email": email, "subject": subject, "message": body_text}
+            json={"recipientEmail": email, "subject": subject, "body": body_text}
         )
         notif_response.raise_for_status()
         print(f"[{routing_key}] Notification sent to {email}")

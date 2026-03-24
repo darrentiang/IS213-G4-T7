@@ -161,6 +161,7 @@ services:
       - USER_SERVICE_URL=http://user:5004
       - LISTING_SERVICE_URL=http://listing:5001
       - NOTIFICATION_SERVICE_URL=http://notification:5006
+      - PYTHONUNBUFFERED=1
     depends_on:
       rabbitmq:
         condition: service_started

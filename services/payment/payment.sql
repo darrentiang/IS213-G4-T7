@@ -1,6 +1,6 @@
 DROP DATABASE IF EXISTS payment_db;
 CREATE DATABASE IF NOT EXISTS payment_db;
-USE payment_db
+USE payment_db;
 
 CREATE TABLE payment(
     payment_id INT AUTO_INCREMENT PRIMARY KEY,

@@ -55,11 +55,10 @@ def charge_payment():
         ).first()
 
         if existing_payment:
-            return jsonify(
-            {
-                 "code": 200,
-                 "message" : "Payment already processed",
-                 "data": existing_payment.json()
+            return jsonify({
+                "code": 200,
+                "message": "Payment already processed.",
+                "data": existing_payment.json()
             }), 200
         
         #charge via stripe
@@ -99,10 +98,9 @@ def charge_payment():
             db.session.commit()
  
             return jsonify({
-                "code":   200,
-                "status": "SUCCESS",
-                "data":   payment_record.json(),
-                "message" : "Payment has been made successfully",
+                "code": 200,
+                "message": "Payment has been made successfully.",
+                "data": payment_record.json()
             }), 200
 
         except stripe.error.CardError as e :
@@ -116,12 +114,13 @@ def charge_payment():
             )
             db.session.add(payment_record)
             db.session.commit()
-        
+
             return jsonify({
-                "code":    200,
-                "status":  "FAILED",
+                "code": 200,
+                "status": "FAILED",
                 "message": e.user_message or str(e),
-            }), 200  
+                "data": payment_record.json()
+            }), 200
 
     except Exception as e:
         return jsonify(

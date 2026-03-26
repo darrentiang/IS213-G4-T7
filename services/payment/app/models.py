@@ -26,12 +26,12 @@ class Payment(db.Model):
 
     def json(self):
         return {
-            "payment_id": self.payment_id,
-            "listing_id": self.listing_id,
-            "buyer_id": self.buyer_id,
-            "amount": float(self.amount), 
-            "stripe_charge_id": self.stripe_charge_id,
-            "idempotency_key": self.idempotency_key,
+            "paymentId": self.payment_id,
+            "listingId": self.listing_id,
+            "buyerId": self.buyer_id,
+            "amount": float(self.amount),
+            "stripeChargeId": self.stripe_charge_id,
+            "idempotencyKey": self.idempotency_key,
             "status": self.status,
-            "created_at": self.created_at.isoformat()
+            "createdAt": self.created_at.isoformat()
         }

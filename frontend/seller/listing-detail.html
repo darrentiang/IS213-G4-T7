@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BidBoard — Listing Detail</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/shared/css/style.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Seller navbar -->
+    <nav class="navbar">
+        <div class="container">
+            <span class="navbar-text">Seller: <span id="navbar-user-name">Loading...</span></span>
+        </div>
+    </nav>
+
+    <div class="container" style="margin-top: 2.5rem; max-width: 900px;">
+        <!-- Loading -->
+        <div id="loading" class="text-center py-5">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+
+        <!-- Main content (hidden until loaded) -->
+        <div id="detail-content" style="display: none;">
+
+            <!-- Back link + status row -->
+            <div class="page-header">
+                <a href="/seller/" class="btn-back">&larr; My Listings</a>
+            </div>
+
+            <!-- Listing header -->
+            <div class="detail-header">
+                <div class="detail-image-wrapper">
+                    <div id="listing-image"></div>
+                    <div id="countdown-container"></div>
+                </div>
+                <div class="detail-info">
+                    <div class="d-flex gap-2 mb-2" id="listing-badges"></div>
+                    <h1 id="listing-title" class="detail-title"></h1>
+                    <p id="listing-description" class="detail-description"></p>
+                    <div id="listing-price" class="detail-price-section"></div>
+                    <div id="listing-times" class="detail-times"></div>
+                </div>
+            </div>
+
+            <!-- AUCTION: Bid history -->
+            <div id="auction-section" style="display: none;">
+                <h3 class="section-title">Bid History</h3>
+                <div id="bids-empty" class="text-muted py-3" style="display: none; font-size: 0.9rem;">
+                    No bids have been placed yet.
+                </div>
+                <div id="bids-table-wrapper" style="display: none;">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Bidder</th>
+                                <th>Amount</th>
+                                <th>Time</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bids-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- FIXED: Offers section -->
+            <div id="fixed-section" style="display: none;">
+                <h3 class="section-title">Offers</h3>
+                <div id="offers-empty" class="text-muted py-3" style="display: none; font-size: 0.9rem;">
+                    No offers received yet.
+                </div>
+                <div id="offers-table-wrapper" style="display: none;">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Buyer</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="offers-body"></tbody>
+                    </table>
+                </div>
+                <!-- Counter modal -->
+                <div id="counter-section" class="form-section mt-3" style="display: none;">
+                    <div class="d-flex gap-2 align-items-end">
+                        <div style="flex: 1;">
+                            <label class="form-label">Counter amount ($)</label>
+                            <input type="number" id="counter-amount" class="form-control" step="0.01" min="0" placeholder="0.00">
+                        </div>
+                        <button class="btn btn-dark" id="counter-submit">Send Counter</button>
+                        <button class="btn btn-outline-secondary" onclick="hideCounter()">Cancel</button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/shared/js/config.js"></script>
+    <script src="/shared/js/api.js"></script>
+    <script>
+        loadNavbarUser(CONFIG.SELLER_ID);
+
+        const listingId = getQueryParam("id");
+        if (!listingId) {
+            window.location.href = "/seller/";
+        }
+
+        let currentListing = null;
+
+        async function loadListing() {
+            try {
+                const listing = await apiFetch(`${CONFIG.LISTING_API}/listings/${listingId}`);
+                currentListing = listing;
+
+                // Image
+                const imageEl = document.getElementById("listing-image");
+                if (listing.imageUrl) {
+                    imageEl.innerHTML = `<img src="${listing.imageUrl}" alt="${listing.title}" onerror="this.outerHTML='<div class=\\'img-placeholder detail-img-placeholder\\'>No Image</div>'">`;
+                } else {
+                    imageEl.innerHTML = `<div class="img-placeholder detail-img-placeholder">No Image</div>`;
+                }
+
+                // Countdown
+                const countdownEl = document.getElementById("countdown-container");
+                if (listing.listingType === "AUCTION" && listing.startTime && listing.endTime) {
+                    const now = new Date();
+                    const start = parseUtcDate(listing.startTime);
+                    const end = parseUtcDate(listing.endTime);
+
+                    if (listing.status === "SCHEDULED" && start > now) {
+                        countdownEl.innerHTML = `<div class="countdown-overlay countdown-scheduled" data-target="${start.toISOString()}" data-type="start">Starts in ${formatCountdown(start - now)}</div>`;
+                    } else if (listing.status === "ACTIVE" && end > now) {
+                        const remaining = end - now;
+                        const cls = remaining < 60000 ? "countdown-ending" : "countdown-active";
+                        countdownEl.innerHTML = `<div class="countdown-overlay ${cls}" data-target="${end.toISOString()}" data-type="end">Ends in ${formatCountdown(remaining)}</div>`;
+                    }
+                }
+
+                // Badges
+                const typeBadge = listing.listingType === "AUCTION"
+                    ? `<span class="badge badge-auction">AUCTION</span>`
+                    : `<span class="badge badge-fixed">FIXED</span>`;
+                const statusBadge = `<span class="badge ${statusBadgeClass(listing.status)}">${statusLabel(listing.status)}</span>`;
+                document.getElementById("listing-badges").innerHTML = `${typeBadge} ${statusBadge}`;
+
+                // Title & description
+                document.getElementById("listing-title").textContent = listing.title;
+                const descEl = document.getElementById("listing-description");
+                if (listing.description) {
+                    descEl.textContent = listing.description;
+                } else {
+                    descEl.style.display = "none";
+                }
+
+                // Price
+                document.getElementById("listing-price").innerHTML =
+                    `<span class="price-label-detail">Starting price</span>
+                     <span class="price-display">${formatPrice(listing.startPrice)}</span>`;
+
+                // Contextual time info (auction only)
+                const timesEl = document.getElementById("listing-times");
+                const timeText = formatListingTime(listing);
+                if (timeText) timesEl.textContent = timeText;
+
+                // Show appropriate section
+                if (listing.listingType === "AUCTION") {
+                    document.getElementById("auction-section").style.display = "block";
+                    loadBids();
+                } else {
+                    document.getElementById("fixed-section").style.display = "block";
+                    loadOffers();
+                }
+
+                // Show content
+                document.getElementById("loading").style.display = "none";
+                document.getElementById("detail-content").style.display = "block";
+
+            } catch (err) {
+                document.getElementById("loading").innerHTML =
+                    `<p class="text-muted">Listing not found. <a href="/seller/">Back to listings</a></p>`;
+            }
+        }
+
+        async function loadBids() {
+            try {
+                const result = await apiFetch(`${CONFIG.BID_API}/bids?listingId=${listingId}`);
+                const bids = (result.bids || []).sort((a, b) => b.amount - a.amount);
+
+                if (bids.length === 0) {
+                    document.getElementById("bids-empty").style.display = "block";
+                    return;
+                }
+
+                // Update price section if there are bids
+                const highest = bids[0];
+                document.getElementById("listing-price").innerHTML =
+                    `<span class="price-label-detail">Current highest bid</span>
+                     <span class="price-display">${formatPrice(highest.amount)}</span>
+                     <span class="price-start-note">Starting price: ${formatPrice(currentListing.startPrice)}</span>`;
+
+                // Fetch buyer names in parallel
+                const buyerIds = [...new Set(bids.map(b => b.buyerId))];
+                const buyerNames = {};
+                await Promise.all(buyerIds.map(async (id) => {
+                    try {
+                        const user = await fetchUser(id);
+                        buyerNames[id] = user.name;
+                    } catch {
+                        buyerNames[id] = `User #${id}`;
+                    }
+                }));
+
+                // Render table
+                const tbody = document.getElementById("bids-body");
+                tbody.innerHTML = bids.map((bid, i) => {
+                    const isHighest = i === 0;
+                    const rowClass = isHighest ? "bid-row-highest" : "";
+                    return `<tr class="${rowClass}">
+                        <td>${i + 1}</td>
+                        <td>${buyerNames[bid.buyerId] || `User #${bid.buyerId}`}</td>
+                        <td class="fw-medium">${formatPrice(bid.amount)}</td>
+                        <td>${formatDateTime(bid.createdAt)}</td>
+                    </tr>`;
+                }).join("");
+
+                document.getElementById("bids-table-wrapper").style.display = "block";
+
+            } catch (err) {
+                // 404 = no bids
+                document.getElementById("bids-empty").style.display = "block";
+            }
+        }
+
+        async function loadOffers() {
+            try {
+                const result = await apiFetch(`${CONFIG.OFFER_API}/offers?listingId=${listingId}`);
+                const offers = result.offers || [];
+
+                if (offers.length === 0) {
+                    document.getElementById("offers-empty").style.display = "block";
+                    return;
+                }
+
+                // Fetch buyer names
+                const buyerIds = [...new Set(offers.map(o => o.buyerId))];
+                const buyerNames = {};
+                await Promise.all(buyerIds.map(async (id) => {
+                    try {
+                        const user = await fetchUser(id);
+                        buyerNames[id] = user.name;
+                    } catch {
+                        buyerNames[id] = `User #${id}`;
+                    }
+                }));
+
+                const tbody = document.getElementById("offers-body");
+                tbody.innerHTML = offers.map(offer => {
+                    const statusBadge = `<span class="badge ${offerBadgeClass(offer.status)}">${offerLabel(offer.status)}</span>`;
+
+                    let actions = "";
+                    if (offer.status === "PENDING" && offer.turn === "SELLER") {
+                        actions = `
+                            <button class="btn btn-dark btn-sm" onclick="acceptSellerOffer(${offer.offerId})">Accept</button>
+                            <button class="btn btn-outline-secondary btn-sm" onclick="showCounter(${offer.offerId})">Counter</button>`;
+                    } else if (offer.status === "COUNTERED" && offer.turn === "BUYER") {
+                        actions = `<span class="text-muted" style="font-size: 0.82rem;">Waiting for buyer...</span>`;
+                    }
+
+                    return `<tr>
+                        <td>${buyerNames[offer.buyerId] || `User #${offer.buyerId}`}</td>
+                        <td class="fw-medium">${formatPrice(offer.amount)}</td>
+                        <td>${statusBadge}</td>
+                        <td>${actions}</td>
+                    </tr>`;
+                }).join("");
+
+                document.getElementById("offers-table-wrapper").style.display = "block";
+
+            } catch (err) {
+                document.getElementById("offers-empty").style.display = "block";
+            }
+        }
+
+        let counterOfferId = null;
+
+        function showCounter(offerId) {
+            counterOfferId = offerId;
+            document.getElementById("counter-section").style.display = "";
+            document.getElementById("counter-amount").value = "";
+            document.getElementById("counter-submit").onclick = () => submitCounter();
+        }
+
+        function hideCounter() {
+            document.getElementById("counter-section").style.display = "none";
+            counterOfferId = null;
+        }
+
+        async function submitCounter() {
+            const amount = parseFloat(document.getElementById("counter-amount").value);
+            if (!amount || amount <= 0) return;
+
+            try {
+                await apiFetch(`${CONFIG.OFFER_API}/offers/${counterOfferId}`, {
+                    method: "PATCH",
+                    body: JSON.stringify({ amount: amount })
+                });
+                hideCounter();
+                loadOffers();
+            } catch (err) {
+                alert("Failed to counter: " + err.message);
+            }
+        }
+
+        async function acceptSellerOffer(offerId) {
+            try {
+                await apiFetch(`${CONFIG.OFFER_API}/offers/${offerId}/accept`, {
+                    method: "POST"
+                });
+                loadOffers();
+            } catch (err) {
+                alert("Failed to accept: " + err.message);
+            }
+        }
+
+        function formatCountdown(ms) {
+            if (ms <= 0) return "0s";
+            const totalSec = Math.floor(ms / 1000);
+            const d = Math.floor(totalSec / 86400);
+            const h = Math.floor((totalSec % 86400) / 3600);
+            const m = Math.floor((totalSec % 3600) / 60);
+            const s = totalSec % 60;
+            if (d > 0) return `${d}d ${h}h`;
+            if (h > 0) return `${h}h ${m}m`;
+            if (m > 0) return `${m}m ${s}s`;
+            return `${s}s`;
+        }
+
+        // Live countdown + auto-refresh on expiry
+        let pendingRefresh = false;
+        setInterval(() => {
+            document.querySelectorAll(".countdown-overlay[data-target]").forEach(el => {
+                const target = new Date(el.dataset.target);
+                const remaining = target - new Date();
+                if (remaining <= 0) {
+                    el.textContent = el.dataset.type === "start" ? "Starting..." : "Ended";
+                    if (!pendingRefresh) {
+                        pendingRefresh = true;
+                        setTimeout(() => {
+                            loadListing();
+                            pendingRefresh = false;
+                        }, 5000);
+                    }
+                    return;
+                }
+                const prefix = el.dataset.type === "start" ? "Starts in" : "Ends in";
+                el.textContent = `${prefix} ${formatCountdown(remaining)}`;
+                if (el.dataset.type === "end" && remaining < 60000) {
+                    el.classList.remove("countdown-active");
+                    el.classList.add("countdown-ending");
+                }
+            });
+        }, 1000);
+
+        loadListing();
+    </script>
+</body>
+</html>

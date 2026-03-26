@@ -131,3 +131,39 @@ function formatDateTime(isoString) {
         timeStyle: "short",
     });
 }
+
+/**
+ * Format a duration in ms as a human-readable relative string.
+ * e.g. "2h 15m", "3d 1h", "45m", "30s"
+ */
+function formatRelativeDuration(ms) {
+    const abs = Math.abs(ms);
+    const totalSec = Math.floor(abs / 1000);
+    const d = Math.floor(totalSec / 86400);
+    const h = Math.floor((totalSec % 86400) / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    if (d > 0) return `${d}d ${h}h`;
+    if (h > 0) return `${h}h ${m}m`;
+    if (m > 0) return `${m}m`;
+    return `${s}s`;
+}
+
+/**
+ * Format contextual time info for a listing based on its status.
+ * Returns a single human-readable string like "Starts in 2h · Ends in 1d 3h" or "Ended 45m ago".
+ */
+function formatListingTime(listing) {
+    if (listing.listingType !== "AUCTION" || !listing.startTime || !listing.endTime) return "";
+    const now = new Date();
+    const start = parseUtcDate(listing.startTime);
+    const end = parseUtcDate(listing.endTime);
+
+    if (listing.status === "SCHEDULED") {
+        return `Starts in ${formatRelativeDuration(start - now)} · Ends in ${formatRelativeDuration(end - now)}`;
+    } else if (listing.status === "ACTIVE") {
+        return `Ends in ${formatRelativeDuration(end - now)}`;
+    } else {
+        return `Ended ${formatRelativeDuration(now - end)} ago`;
+    }
+}

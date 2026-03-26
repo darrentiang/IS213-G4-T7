@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BidBoard — Listing Detail</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/shared/css/style.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Buyer navbar -->
+    <nav class="navbar navbar-buyer">
+        <div class="container">
+            <span class="navbar-text">Buyer: <span id="navbar-user-name">Loading...</span></span>
+            <a href="/buyer/my-offers.html" class="nav-link-right">My Offers</a>
+        </div>
+    </nav>
+
+    <div class="container" style="margin-top: 2.5rem; max-width: 900px;">
+        <!-- Loading -->
+        <div id="loading" class="text-center py-5">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+
+        <!-- Main content (hidden until loaded) -->
+        <div id="detail-content" style="display: none;">
+
+            <!-- Back link -->
+            <div class="page-header">
+                <a href="/buyer/" class="btn-back">&larr; Marketplace</a>
+            </div>
+
+            <!-- Listing header -->
+            <div class="detail-header">
+                <div class="detail-image-wrapper">
+                    <div id="listing-image"></div>
+                    <div id="countdown-container"></div>
+                </div>
+                <div class="detail-info">
+                    <div class="d-flex gap-2 mb-2" id="listing-badges"></div>
+                    <h1 id="listing-title" class="detail-title"></h1>
+                    <p id="listing-description" class="detail-description"></p>
+                    <div id="listing-price" class="detail-price-section"></div>
+                    <div id="listing-times" class="detail-times"></div>
+                </div>
+            </div>
+
+            <!-- AUCTION: Place bid + bid history -->
+            <div id="auction-section" style="display: none;">
+                <!-- Place bid form -->
+                <div id="bid-form-section" class="form-section mb-4">
+                    <h3 class="section-title" style="border: none; padding: 0; margin-bottom: 0.75rem;">Place a Bid</h3>
+                    <div id="bid-alert"></div>
+                    <div class="d-flex gap-2 align-items-end">
+                        <div style="flex: 1;">
+                            <label for="bid-amount" class="form-label">Your bid amount ($)</label>
+                            <input type="number" id="bid-amount" class="form-control" step="0.01" min="0" placeholder="0.00">
+                        </div>
+                        <button id="bid-submit" class="btn btn-dark" onclick="placeBid()">Place Bid</button>
+                    </div>
+                    <p id="bid-hint" class="text-muted mt-2" style="font-size: 0.78rem;"></p>
+                </div>
+
+                <!-- Bid history -->
+                <h3 class="section-title">Bid History</h3>
+                <div id="bids-empty" class="text-muted py-3" style="display: none; font-size: 0.9rem;">
+                    No bids have been placed yet. Be the first!
+                </div>
+                <div id="bids-table-wrapper" style="display: none;">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Bidder</th>
+                                <th>Amount</th>
+                                <th>Time</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bids-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- FIXED: Make offer -->
+            <div id="fixed-section" style="display: none;">
+                <!-- Offer form (shown if buyer has no active offer) -->
+                <div id="offer-form-section" class="form-section mb-4">
+                    <h3 class="section-title" style="border: none; padding: 0; margin-bottom: 0.75rem;">Make an Offer</h3>
+                    <div id="offer-alert"></div>
+                    <div class="d-flex gap-2 align-items-end">
+                        <div style="flex: 1;">
+                            <label for="offer-amount" class="form-label">Your offer amount ($)</label>
+                            <input type="number" id="offer-amount" class="form-control" step="0.01" min="0" placeholder="0.00">
+                        </div>
+                        <button class="btn btn-dark" onclick="makeOffer()">Submit Offer</button>
+                    </div>
+                </div>
+
+                <!-- Existing offer status (shown if buyer already has an offer) -->
+                <div id="offer-status-section" style="display: none;">
+                    <h3 class="section-title">Your Offer</h3>
+                    <div id="offer-status-content"></div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/shared/js/config.js"></script>
+    <script src="/shared/js/api.js"></script>
+    <script>
+        loadNavbarUser(CONFIG.BUYER_ID);
+
+        const listingId = getQueryParam("id");
+        if (!listingId) {
+            window.location.href = "/buyer/";
+        }
+
+        let currentListing = null;
+        let currentHighestBid = null;
+
+        async function loadListing() {
+            try {
+                const listing = await apiFetch(`${CONFIG.LISTING_API}/listings/${listingId}`);
+                currentListing = listing;
+
+                // Image
+                const imageEl = document.getElementById("listing-image");
+                if (listing.imageUrl) {
+                    imageEl.innerHTML = `<img src="${listing.imageUrl}" alt="${listing.title}" onerror="this.outerHTML='<div class=\\'img-placeholder detail-img-placeholder\\'>No Image</div>'">`
+                } else {
+                    imageEl.innerHTML = `<div class="img-placeholder detail-img-placeholder">No Image</div>`;
+                }
+
+                // Countdown
+                const countdownEl = document.getElementById("countdown-container");
+                countdownEl.innerHTML = "";
+                if (listing.listingType === "AUCTION" && listing.endTime && listing.status === "ACTIVE") {
+                    const now = new Date();
+                    const end = parseUtcDate(listing.endTime);
+                    if (end > now) {
+                        const remaining = end - now;
+                        const cls = remaining < 60000 ? "countdown-ending" : "countdown-active";
+                        countdownEl.innerHTML = `<div class="countdown-overlay ${cls}" data-target="${end.toISOString()}" data-type="end">Ends in ${formatCountdown(remaining)}</div>`;
+                    }
+                }
+
+                // Badges
+                const typeBadge = listing.listingType === "AUCTION"
+                    ? `<span class="badge badge-auction">AUCTION</span>`
+                    : `<span class="badge badge-fixed">FIXED</span>`;
+                const statusBadge = `<span class="badge ${statusBadgeClass(listing.status)}">${statusLabel(listing.status)}</span>`;
+                document.getElementById("listing-badges").innerHTML = `${typeBadge} ${statusBadge}`;
+
+                // Title & description
+                document.getElementById("listing-title").textContent = listing.title;
+                const descEl = document.getElementById("listing-description");
+                if (listing.description) {
+                    descEl.textContent = listing.description;
+                    descEl.style.display = "";
+                } else {
+                    descEl.style.display = "none";
+                }
+
+                // Price (will be updated by loadBids for auctions)
+                document.getElementById("listing-price").innerHTML =
+                    `<span class="price-label-detail">${listing.listingType === "AUCTION" ? "Starting price" : "Asking price"}</span>
+                     <span class="price-display">${formatPrice(listing.startPrice)}</span>`;
+
+                // Time info
+                const timesEl = document.getElementById("listing-times");
+                const timeText = formatListingTime(listing);
+                if (timeText) {
+                    timesEl.textContent = timeText;
+                    timesEl.style.display = "";
+                } else {
+                    timesEl.style.display = "none";
+                }
+
+                // Show appropriate section
+                if (listing.listingType === "AUCTION") {
+                    document.getElementById("auction-section").style.display = "block";
+                    document.getElementById("fixed-section").style.display = "none";
+                    // Hide bid form if listing is not active
+                    document.getElementById("bid-form-section").style.display =
+                        listing.status === "ACTIVE" ? "" : "none";
+                    loadBids();
+                } else {
+                    document.getElementById("auction-section").style.display = "none";
+                    document.getElementById("fixed-section").style.display = "block";
+                    // Hide offer form if listing is not active
+                    if (listing.status === "ACTIVE") {
+                        loadOfferStatus();
+                    } else {
+                        document.getElementById("offer-form-section").style.display = "none";
+                    }
+                }
+
+                // Show content
+                document.getElementById("loading").style.display = "none";
+                document.getElementById("detail-content").style.display = "block";
+
+            } catch (err) {
+                document.getElementById("loading").innerHTML =
+                    `<p class="text-muted">Listing not found. <a href="/buyer/">Back to marketplace</a></p>`;
+            }
+        }
+
+        async function loadBids() {
+            try {
+                const result = await apiFetch(`${CONFIG.BID_API}/bids?listingId=${listingId}`);
+                const bids = (result.bids || []).sort((a, b) => b.amount - a.amount);
+
+                if (bids.length === 0) {
+                    document.getElementById("bids-empty").style.display = "block";
+                    document.getElementById("bids-table-wrapper").style.display = "none";
+                    currentHighestBid = null;
+                    // Set hint
+                    document.getElementById("bid-hint").textContent =
+                        `Minimum bid: ${formatPrice(currentListing.startPrice)}`;
+                    return;
+                }
+
+                currentHighestBid = bids[0];
+
+                // Update price section
+                document.getElementById("listing-price").innerHTML =
+                    `<span class="price-label-detail">Current highest bid</span>
+                     <span class="price-display">${formatPrice(currentHighestBid.amount)}</span>
+                     <span class="price-start-note">Starting price: ${formatPrice(currentListing.startPrice)}</span>`;
+
+                // Set hint
+                document.getElementById("bid-hint").textContent =
+                    `Must be higher than ${formatPrice(currentHighestBid.amount)}`;
+
+                // Fetch buyer names
+                const buyerIds = [...new Set(bids.map(b => b.buyerId))];
+                const buyerNames = {};
+                await Promise.all(buyerIds.map(async (id) => {
+                    try {
+                        const user = await fetchUser(id);
+                        buyerNames[id] = id === CONFIG.BUYER_ID ? `${user.name} (You)` : user.name;
+                    } catch {
+                        buyerNames[id] = `User #${id}`;
+                    }
+                }));
+
+                // Render table
+                const tbody = document.getElementById("bids-body");
+                tbody.innerHTML = bids.map((bid, i) => {
+                    const isHighest = i === 0;
+                    const isYou = bid.buyerId === CONFIG.BUYER_ID;
+                    const rowClass = isHighest ? "bid-row-highest" : "";
+                    return `<tr class="${rowClass}">
+                        <td>${i + 1}</td>
+                        <td>${buyerNames[bid.buyerId] || `User #${bid.buyerId}`}</td>
+                        <td class="fw-medium">${formatPrice(bid.amount)}</td>
+                        <td>${formatDateTime(bid.createdAt)}</td>
+                    </tr>`;
+                }).join("");
+
+                document.getElementById("bids-empty").style.display = "none";
+                document.getElementById("bids-table-wrapper").style.display = "block";
+
+            } catch (err) {
+                document.getElementById("bids-empty").style.display = "block";
+                document.getElementById("bids-table-wrapper").style.display = "none";
+                currentHighestBid = null;
+                document.getElementById("bid-hint").textContent =
+                    `Minimum bid: ${formatPrice(currentListing.startPrice)}`;
+            }
+        }
+
+        async function placeBid() {
+            const alertEl = document.getElementById("bid-alert");
+            const amountInput = document.getElementById("bid-amount");
+            const amount = parseFloat(amountInput.value);
+
+            if (!amount || amount <= 0) {
+                alertEl.innerHTML = `<div class="alert alert-danger py-2">Please enter a valid amount.</div>`;
+                return;
+            }
+
+            // Validate against minimum
+            const minBid = currentHighestBid ? currentHighestBid.amount : currentListing.startPrice;
+            if (amount <= minBid) {
+                alertEl.innerHTML = `<div class="alert alert-danger py-2">Bid must be higher than ${formatPrice(minBid)}.</div>`;
+                return;
+            }
+
+            const btn = document.getElementById("bid-submit");
+            btn.disabled = true;
+            btn.textContent = "Placing...";
+
+            try {
+                await apiFetch(`${CONFIG.BID_API}/bids`, {
+                    method: "POST",
+                    body: JSON.stringify({
+                        listingId: parseInt(listingId),
+                        buyerId: CONFIG.BUYER_ID,
+                        amount: amount
+                    })
+                });
+
+                alertEl.innerHTML = `<div class="alert alert-success py-2">Bid of ${formatPrice(amount)} placed!</div>`;
+                amountInput.value = "";
+                loadBids();
+
+            } catch (err) {
+                alertEl.innerHTML = `<div class="alert alert-danger py-2">${err.message}</div>`;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "Place Bid";
+            }
+        }
+
+        async function loadOfferStatus() {
+            try {
+                const result = await apiFetch(`${CONFIG.OFFER_API}/offers?listingId=${listingId}&buyerId=${CONFIG.BUYER_ID}`);
+                const offers = result.offers || [];
+
+                // Find active offer (not CANCELLED or REJECTED)
+                const activeOffer = offers.find(o => !["CANCELLED", "REJECTED"].includes(o.status));
+
+                if (!activeOffer) {
+                    // No active offer — show form
+                    document.getElementById("offer-form-section").style.display = "";
+                    document.getElementById("offer-status-section").style.display = "none";
+                    return;
+                }
+
+                // Has active offer — show status instead of form
+                document.getElementById("offer-form-section").style.display = "none";
+                document.getElementById("offer-status-section").style.display = "";
+
+                const statusBadge = `<span class="badge ${offerBadgeClass(activeOffer.status)}">${offerLabel(activeOffer.status)}</span>`;
+
+                let content = `
+                    <div class="form-section">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="fw-medium">Your offer: ${formatPrice(activeOffer.amount)}</span>
+                            ${statusBadge}
+                        </div>`;
+
+                if (activeOffer.status === "COUNTERED" && activeOffer.turn === "BUYER") {
+                    content += `
+                        <p class="text-muted mb-2" style="font-size: 0.85rem;">
+                            The seller countered with <strong>${formatPrice(activeOffer.amount)}</strong>.
+                        </p>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-dark btn-sm" onclick="acceptOffer(${activeOffer.offerId})">Accept Counter</button>
+                            <button class="btn btn-outline-secondary btn-sm" onclick="rejectOffer(${activeOffer.offerId})">Reject</button>
+                        </div>`;
+                } else if (activeOffer.status === "COUNTERED" && activeOffer.turn === "SELLER") {
+                    content += `<p class="text-muted mb-0" style="font-size: 0.85rem;">Waiting for seller to respond...</p>`;
+                } else if (activeOffer.status === "PENDING") {
+                    content += `<p class="text-muted mb-0" style="font-size: 0.85rem;">Waiting for seller to respond...</p>`;
+                } else if (activeOffer.status === "ACCEPTED") {
+                    content += `<p class="text-muted mb-0" style="font-size: 0.85rem;">Your offer was accepted! Payment will be processed.</p>`;
+                }
+
+                content += `</div>`;
+                document.getElementById("offer-status-content").innerHTML = content;
+
+            } catch (err) {
+                // No offers endpoint or no offers — show form
+                document.getElementById("offer-form-section").style.display = "";
+                document.getElementById("offer-status-section").style.display = "none";
+            }
+        }
+
+        async function makeOffer() {
+            const alertEl = document.getElementById("offer-alert");
+            const amountInput = document.getElementById("offer-amount");
+            const amount = parseFloat(amountInput.value);
+
+            if (!amount || amount <= 0) {
+                alertEl.innerHTML = `<div class="alert alert-danger py-2">Please enter a valid amount.</div>`;
+                return;
+            }
+
+            try {
+                await apiFetch(`${CONFIG.OFFER_API}/offers`, {
+                    method: "POST",
+                    body: JSON.stringify({
+                        listingId: parseInt(listingId),
+                        buyerId: CONFIG.BUYER_ID,
+                        sellerId: currentListing.sellerId,
+                        amount: amount
+                    })
+                });
+
+                alertEl.innerHTML = `<div class="alert alert-success py-2">Offer of ${formatPrice(amount)} submitted!</div>`;
+                amountInput.value = "";
+                // Switch to offer status view
+                setTimeout(() => loadOfferStatus(), 1000);
+
+            } catch (err) {
+                alertEl.innerHTML = `<div class="alert alert-danger py-2">${err.message}</div>`;
+            }
+        }
+
+        async function acceptOffer(offerId) {
+            try {
+                await apiFetch(`${CONFIG.OFFER_API}/offers/${offerId}/accept`, {
+                    method: "POST"
+                });
+                loadOfferStatus();
+            } catch (err) {
+                alert("Failed to accept: " + err.message);
+            }
+        }
+
+        async function rejectOffer(offerId) {
+            try {
+                await apiFetch(`${CONFIG.OFFER_API}/offers/${offerId}/reject`, {
+                    method: "POST"
+                });
+                loadOfferStatus();
+            } catch (err) {
+                alert("Failed to reject: " + err.message);
+            }
+        }
+
+        function formatCountdown(ms) {
+            if (ms <= 0) return "0s";
+            const totalSec = Math.floor(ms / 1000);
+            const d = Math.floor(totalSec / 86400);
+            const h = Math.floor((totalSec % 86400) / 3600);
+            const m = Math.floor((totalSec % 3600) / 60);
+            const s = totalSec % 60;
+            if (d > 0) return `${d}d ${h}h`;
+            if (h > 0) return `${h}h ${m}m`;
+            if (m > 0) return `${m}m ${s}s`;
+            return `${s}s`;
+        }
+
+        // Live countdown + auto-refresh
+        let pendingRefresh = false;
+        setInterval(() => {
+            document.querySelectorAll(".countdown-overlay[data-target]").forEach(el => {
+                const target = new Date(el.dataset.target);
+                const remaining = target - new Date();
+                if (remaining <= 0) {
+                    el.textContent = "Ended";
+                    if (!pendingRefresh) {
+                        pendingRefresh = true;
+                        setTimeout(() => {
+                            loadListing();
+                            pendingRefresh = false;
+                        }, 5000);
+                    }
+                    return;
+                }
+                el.textContent = `Ends in ${formatCountdown(remaining)}`;
+                if (remaining < 60000) {
+                    el.classList.remove("countdown-active");
+                    el.classList.add("countdown-ending");
+                }
+            });
+        }, 1000);
+
+        loadListing();
+    </script>
+</body>
+</html>

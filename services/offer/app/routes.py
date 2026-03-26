@@ -6,6 +6,29 @@ from app.models import Offer
 
 offer_bp = Blueprint('offer', __name__)
 
+@offer_bp.route("/offers")
+def get_offers():
+    """Get offers filtered by listingId, buyerId, or both."""
+    listing_id = request.args.get("listingId", type=int)
+    buyer_id = request.args.get("buyerId", type=int)
+
+    query = db.select(Offer)
+    if listing_id:
+        query = query.filter_by(listing_id=listing_id)
+    if buyer_id:
+        query = query.filter_by(buyer_id=buyer_id)
+
+    offers = db.session.scalars(query).all()
+
+    if offers:
+        return jsonify({
+            "code": 200,
+            "data": {"offers": [o.json() for o in offers]}
+        }), 200
+
+    return jsonify({"code": 404, "message": "No offers found."}), 404
+
+
 @offer_bp.route("/offers", methods=['POST'])
 def create_offer(): 
     try:

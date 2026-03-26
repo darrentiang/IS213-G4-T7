@@ -42,6 +42,67 @@ body {
     font-weight: 500;
 }
 
+/* Buyer navbar variant */
+.navbar-buyer {
+    background-color: #eff6ff !important;
+    border-bottom: 1px solid #dbeafe;
+}
+
+.navbar-buyer .navbar-text span {
+    color: #1e40af;
+}
+
+/* Navbar right-side links */
+.navbar .nav-link-right {
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--bb-text-secondary);
+    text-decoration: none;
+}
+
+.navbar .nav-link-right:hover {
+    color: var(--bb-text);
+}
+
+.navbar .nav-link-right.nav-link-active {
+    color: var(--bb-text);
+}
+
+.navbar .container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* ── Filter tabs ── */
+.filter-tabs {
+    display: flex;
+    gap: 0.35rem;
+}
+
+.filter-tab {
+    background: none;
+    border: 1px solid var(--bb-border);
+    border-radius: 6px;
+    padding: 0.3rem 0.85rem;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--bb-text-secondary);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.filter-tab:hover {
+    border-color: #b0b4ba;
+    color: var(--bb-text);
+}
+
+.filter-tab.active {
+    background-color: var(--bb-text);
+    border-color: var(--bb-text);
+    color: #fff;
+}
+
 /* ── Page header ── */
 .page-header {
     display: flex;
@@ -264,11 +325,113 @@ body {
     background-color: rgba(156, 163, 175, 0.06);
 }
 
-/* ── Price display (detail pages) ── */
+/* ── Detail page layout ── */
+.btn-back {
+    font-size: 0.85rem;
+    color: var(--bb-text-secondary);
+    text-decoration: none;
+    font-weight: 400;
+}
+
+.btn-back:hover {
+    color: var(--bb-text);
+}
+
+.detail-header {
+    display: flex;
+    gap: 2rem;
+    margin-bottom: 2.5rem;
+}
+
+.detail-image-wrapper {
+    position: relative;
+    flex-shrink: 0;
+    width: 340px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--bb-border);
+    background: #fff;
+}
+
+.detail-image-wrapper img {
+    width: 100%;
+    height: 240px;
+    object-fit: cover;
+    display: block;
+}
+
+.detail-img-placeholder {
+    height: 240px !important;
+}
+
+.detail-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.detail-title {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--bb-text);
+    margin-bottom: 0.35rem;
+}
+
+.detail-description {
+    font-size: 0.9rem;
+    color: var(--bb-text-secondary);
+    margin-bottom: 1.25rem;
+    line-height: 1.5;
+}
+
+.detail-price-section {
+    margin-bottom: 1rem;
+}
+
+.price-label-detail {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 400;
+    color: var(--bb-text-secondary);
+    margin-bottom: 0.15rem;
+}
+
 .price-display {
     font-size: 1.4rem;
     font-weight: 600;
     color: #16a34a;
+}
+
+.price-start-note {
+    display: block;
+    font-size: 0.78rem;
+    color: var(--bb-text-secondary);
+    margin-top: 0.2rem;
+}
+
+.detail-times {
+    margin-top: 0.75rem;
+    font-size: 0.82rem;
+    color: var(--bb-text-secondary);
+}
+
+/* Section titles */
+.section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--bb-text);
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--bb-border);
+}
+
+/* Bid table highlights */
+.bid-row-highest {
+    background-color: rgba(22, 163, 74, 0.04);
+}
+
+.bid-row-highest td {
+    color: #16a34a;
+    font-weight: 500;
 }
 
 /* ── Tables ── */

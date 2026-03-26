@@ -10,7 +10,7 @@ class Offer(db.Model):
     listing_id = db.Column(db.Integer, nullable=False)
     buyer_id = db.Column(db.Integer, nullable=False)
     seller_id = db.Column(db.Integer, nullable=False)
-    amount = db.Column(db.Float(precision=2), nullable=False)
+    amount = db.Column(db.Numeric(10, 2), nullable=False)
     status = db.Column(db.String(20), nullable=False)
     turn = db.Column(db.String(10), nullable=True)
     created_at = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
@@ -26,13 +26,13 @@ class Offer(db.Model):
 
     def json(self):
         return {
-            "offer_id": self.offer_id,
-            "listing_id": self.listing_id,
-            "buyer_id": self.buyer_id,
-            "seller_id": self.seller_id,
-            "amount": self.amount,
+            "offerId": self.offer_id,
+            "listingId": self.listing_id,
+            "buyerId": self.buyer_id,
+            "sellerId": self.seller_id,
+            "amount": float(self.amount),
             "status": self.status,
             "turn": self.turn,
-            "created_at": self.created_at.isoformat(),
-            "updated_at": self.updated_at.isoformat()
+            "createdAt": self.created_at.isoformat(),
+            "updatedAt": self.updated_at.isoformat()
         }

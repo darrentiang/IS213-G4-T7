@@ -19,9 +19,9 @@ class Bid(db.Model):
 
     def json(self):
         return {
-            "bid_id": self.bid_id,
-            "listing_id": self.listing_id,
-            "buyer_id": self.buyer_id,
+            "bidId": self.bid_id,
+            "listingId": self.listing_id,
+            "buyerId": self.buyer_id,
             "amount": float(self.amount),
-            "created_at": self.created_at.isoformat()
+            "createdAt": self.created_at.isoformat()
         }

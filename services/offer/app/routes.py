@@ -24,19 +24,19 @@ def create_offer():
                 }), 400
             
         offer = Offer(
-            listingId = data['listingId'],
-            buyerId = data['buyerId'],
-            sellerId = data['sellerId'],
-            amount = data['amount'],
-            status = "PENDING",
-            turn = "SELLER"
+            listing_id=data['listingId'],
+            buyer_id=data['buyerId'],
+            seller_id=data['sellerId'],
+            amount=data['amount'],
+            status="PENDING",
+            turn="SELLER"
         )
         db.session.add(offer)
         db.session.commit()
 
         return jsonify({
             "code": 201,
-            "message": offer.json()
+            "data": offer.json()
         }), 201
     
     except Exception as e:
@@ -97,7 +97,7 @@ def counter_offer(offer_id):
 
         return jsonify({
             "code": 200,
-            "message": offer.json()
+            "data": offer.json()
         }), 200 
         
     except Exception as e:
@@ -124,7 +124,7 @@ def accept_offer(offer_id):
 
             return jsonify({
                 "code": 200,
-                "message": offer.json()
+                "data": offer.json()
             }), 200 
         
         return jsonify({
@@ -157,7 +157,7 @@ def reject_offer(offer_id):
 
             return jsonify({
                 "code": 200,
-                "message": offer.json()
+                "data": offer.json()
             }), 200 
         
         return jsonify({

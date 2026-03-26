@@ -18,35 +18,35 @@ def create_listing():
 
         data = request.get_json()
 
-        for field in ('seller_id', 'title', 'listing_type', 'start_price'):
+        for field in ('sellerId', 'title', 'listingType', 'startPrice'):
             if field not in data:
                 return jsonify({"code": 400, "message": f"Missing required field: {field}"}), 400
 
-        listing_type = data['listing_type'].upper()
+        listing_type = data['listingType'].upper()
 
         if listing_type not in ('AUCTION', 'FIXED'):
             return jsonify({"code": 400, "message": "listing_type must be AUCTION or FIXED."}), 400
 
         # AUCTION requires start_time and end_time
         if listing_type == 'AUCTION':
-            if 'start_time' not in data or 'end_time' not in data:
+            if 'startTime' not in data or 'endTime' not in data:
                 return jsonify({
                     "code": 400,
-                    "message": "AUCTION listings require start_time and end_time."
+                    "message": "AUCTION listings require startTime and endTime."
                 }), 400
             status = 'SCHEDULED'
         else:
             status = 'ACTIVE'
 
         listing = Listing(
-            seller_id=data['seller_id'],
+            seller_id=data['sellerId'],
             title=data['title'],
             description=data.get('description'),
-            image_url=data.get('image_url'),
+            image_url=data.get('imageUrl'),
             listing_type=listing_type,
-            start_price=data['start_price'],
-            start_time=data.get('start_time'),
-            end_time=data.get('end_time'),
+            start_price=data['startPrice'],
+            start_time=data.get('startTime'),
+            end_time=data.get('endTime'),
             status=status
         )
         db.session.add(listing)
@@ -67,7 +67,7 @@ def create_listing():
             })
 
             # calculate TTL in milliseconds (time until start_time)
-            start_dt = datetime.fromisoformat(data['start_time'])
+            start_dt = datetime.fromisoformat(data['startTime'])
             ttl_ms = max(int((start_dt - datetime.now()).total_seconds() * 1000), 0)
 
             # publish auction.start to market.timers with TTL
@@ -147,9 +147,9 @@ def update_listing_status(listing_id):
 
         listing.status = new_status
 
-        # set winning_buyer_id if provided (used during auction close)
-        if 'winning_buyer_id' in data:
-            listing.winning_buyer_id = data['winning_buyer_id']
+        # set winningBuyerId if provided (used during auction close)
+        if 'winningBuyerId' in data:
+            listing.winning_buyer_id = data['winningBuyerId']
 
         db.session.commit()
 

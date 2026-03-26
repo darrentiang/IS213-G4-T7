@@ -62,6 +62,20 @@ function statusBadgeClass(status) {
 }
 
 /**
+ * Return a seller-friendly display label for a listing status.
+ */
+function statusLabel(status) {
+    switch (status) {
+        case "SCHEDULED": return "Scheduled";
+        case "ACTIVE": return "Live";
+        case "CLOSED_PENDING_PAYMENT": return "Processing";
+        case "SOLD": return "Sold";
+        case "FAILED_NO_ELIGIBLE_BIDDER": return "Unsold";
+        default: return status;
+    }
+}
+
+/**
  * Return an outline badge class for an offer status.
  */
 function offerBadgeClass(status) {
@@ -72,6 +86,20 @@ function offerBadgeClass(status) {
         case "REJECTED": return "badge-offer-rejected";
         case "CANCELLED": return "badge-offer-cancelled";
         default: return "badge-offer-default";
+    }
+}
+
+/**
+ * Return a display label for an offer status.
+ */
+function offerLabel(status) {
+    switch (status) {
+        case "PENDING": return "Pending";
+        case "COUNTERED": return "Countered";
+        case "ACCEPTED": return "Accepted";
+        case "REJECTED": return "Rejected";
+        case "CANCELLED": return "Cancelled";
+        default: return status;
     }
 }
 

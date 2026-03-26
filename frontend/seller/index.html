@@ -78,7 +78,7 @@
                 ? `<span class="badge badge-auction">AUCTION</span>`
                 : `<span class="badge badge-fixed">FIXED</span>`;
 
-            const statusBadge = `<span class="badge ${statusBadgeClass(listing.status)}">${listing.status}</span>`;
+            const statusBadge = `<span class="badge ${statusBadgeClass(listing.status)}">${statusLabel(listing.status)}</span>`;
 
             const imageInner = listing.imageUrl
                 ? `<img src="${listing.imageUrl}" class="card-img-top" alt="${listing.title}" onerror="this.outerHTML='<div class=\\'img-placeholder\\'>No Image</div>'">`

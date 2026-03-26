@@ -29,6 +29,13 @@ No escrow, no confirm receipt, no disputes. Payment is a direct charge via Strip
 
 ---
 
+## Coding Conventions
+
+- **Python code + DB columns** → snake_case (`listing_id`, `seller_id`, `start_time`)
+- **All JSON (API requests, responses, RabbitMQ payloads)** → camelCase (`listingId`, `sellerId`, `startTime`)
+
+---
+
 ## Architecture Rules (from course + professor feedback)
 
 1. **Atomic services cannot call other atomic services.** They must not be aware of each other. Communication between atomics goes through composite services or via AMQP events through RabbitMQ.

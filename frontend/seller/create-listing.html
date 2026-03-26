@@ -64,15 +64,15 @@
             <div class="form-section" id="auction-fields">
                 <h6 class="fw-semibold mb-3">Auction Schedule</h6>
                 <p class="text-muted small mb-3">
-                    Times must be in UTC. Your local time (SGT) is UTC+8.
+                    All times are in SGT (UTC+8).
                 </p>
                 <div class="row">
                     <div class="col-md-6 mb-3">
-                        <label for="startTime" class="form-label fw-semibold">Start Time (UTC) <span class="text-danger">*</span></label>
+                        <label for="startTime" class="form-label fw-semibold">Start Time (SGT) <span class="text-danger">*</span></label>
                         <input type="datetime-local" class="form-control" id="startTime">
                     </div>
                     <div class="col-md-6 mb-3">
-                        <label for="endTime" class="form-label fw-semibold">End Time (UTC) <span class="text-danger">*</span></label>
+                        <label for="endTime" class="form-label fw-semibold">End Time (SGT) <span class="text-danger">*</span></label>
                         <input type="datetime-local" class="form-control" id="endTime">
                     </div>
                 </div>
@@ -104,31 +104,55 @@
             });
         });
 
-        // Pre-populate times for demo convenience (UTC)
+        // Pre-populate times for demo convenience (SGT / local time)
         function prefillTimes() {
             const now = new Date();
             const start = new Date(now.getTime() + 1 * 60 * 1000); // +1 min
             const end = new Date(now.getTime() + 6 * 60 * 1000);   // +6 min
 
-            // Format as YYYY-MM-DDTHH:MM for datetime-local (in UTC)
+            // Format as YYYY-MM-DDTHH:MM using local (SGT) time
             const pad = (n) => String(n).padStart(2, "0");
-            const toLocal = (d) =>
-                `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}T${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
+            const toLocalStr = (d) =>
+                `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 
-            startTimeInput.value = toLocal(start);
-            endTimeInput.value = toLocal(end);
+            startTimeInput.value = toLocalStr(start);
+            endTimeInput.value = toLocalStr(end);
         }
         prefillTimes();
+
+        // Convert a datetime-local string (SGT) to UTC ISO string "YYYY-MM-DDTHH:MM:SS"
+        function sgtToUtc(datetimeLocalValue) {
+            // datetime-local value is interpreted as local time by the Date constructor
+            const localDate = new Date(datetimeLocalValue);
+            const pad = (n) => String(n).padStart(2, "0");
+            return `${localDate.getUTCFullYear()}-${pad(localDate.getUTCMonth() + 1)}-${pad(localDate.getUTCDate())}T${pad(localDate.getUTCHours())}:${pad(localDate.getUTCMinutes())}:${pad(localDate.getUTCSeconds())}`;
+        }
 
         // Form submission
         document.getElementById("create-listing-form").addEventListener("submit", async (e) => {
             e.preventDefault();
 
             const submitBtn = document.getElementById("submit-btn");
+            const listingType = document.querySelector('input[name="listingType"]:checked').value;
+
+            // Validation for auction times
+            if (listingType === "AUCTION") {
+                const now = new Date();
+                const startLocal = new Date(startTimeInput.value);
+                const endLocal = new Date(endTimeInput.value);
+
+                if (startLocal <= now) {
+                    showAlert("danger", "Start time must be in the future.");
+                    return;
+                }
+                if (endLocal <= startLocal) {
+                    showAlert("danger", "End time must be after the start time.");
+                    return;
+                }
+            }
+
             submitBtn.disabled = true;
             submitBtn.textContent = "Creating...";
-
-            const listingType = document.querySelector('input[name="listingType"]:checked').value;
 
             const body = {
                 sellerId: CONFIG.SELLER_ID,
@@ -140,8 +164,8 @@
             };
 
             if (listingType === "AUCTION") {
-                body.startTime = document.getElementById("startTime").value + ":00";
-                body.endTime = document.getElementById("endTime").value + ":00";
+                body.startTime = sgtToUtc(startTimeInput.value);
+                body.endTime = sgtToUtc(endTimeInput.value);
             }
 
             try {

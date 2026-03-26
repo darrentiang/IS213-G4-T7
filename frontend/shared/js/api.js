@@ -83,11 +83,21 @@ function formatPrice(amount) {
 }
 
 /**
- * Format an ISO datetime string for display.
+ * Parse a UTC datetime string from the API.
+ * API returns times without "Z" suffix — append it so JS treats them as UTC.
+ */
+function parseUtcDate(isoString) {
+    if (!isoString) return null;
+    const s = isoString.endsWith("Z") ? isoString : isoString + "Z";
+    return new Date(s);
+}
+
+/**
+ * Format a UTC datetime string from the API for display (in local/SGT time).
  */
 function formatDateTime(isoString) {
     if (!isoString) return "—";
-    const d = new Date(isoString);
+    const d = parseUtcDate(isoString);
     return d.toLocaleString("en-SG", {
         dateStyle: "medium",
         timeStyle: "short",

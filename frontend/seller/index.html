@@ -80,29 +80,81 @@
 
             const statusBadge = `<span class="badge ${statusBadgeClass(listing.status)}">${listing.status}</span>`;
 
-            const image = listing.imageUrl
+            const imageInner = listing.imageUrl
                 ? `<img src="${listing.imageUrl}" class="card-img-top" alt="${listing.title}" onerror="this.outerHTML='<div class=\\'img-placeholder\\'>No Image</div>'">`
                 : `<div class="img-placeholder">No Image</div>`;
 
-            const timeInfo = listing.listingType === "AUCTION"
-                ? `<p class="card-text small text-muted mb-1">Start: ${formatDateTime(listing.startTime)}</p>
-                   <p class="card-text small text-muted">End: ${formatDateTime(listing.endTime)}</p>`
-                : "";
+            // Countdown overlay for auctions
+            let countdownHtml = "";
+            if (listing.listingType === "AUCTION" && listing.startTime && listing.endTime) {
+                const now = new Date();
+                const start = parseUtcDate(listing.startTime);
+                const end = parseUtcDate(listing.endTime);
+
+                if (listing.status === "SCHEDULED" && start > now) {
+                    const text = formatCountdown(start - now);
+                    countdownHtml = `<div class="countdown-overlay countdown-scheduled" data-target="${start.toISOString()}" data-type="start">Starts in ${text}</div>`;
+                } else if (listing.status === "ACTIVE" && end > now) {
+                    const remaining = end - now;
+                    const cls = remaining < 60000 ? "countdown-ending" : "countdown-active";
+                    const text = formatCountdown(remaining);
+                    countdownHtml = `<div class="countdown-overlay ${cls}" data-target="${end.toISOString()}" data-type="end">Ends in ${text}</div>`;
+                }
+            }
+
+            // Price label
+            const priceLabel = listing.listingType === "AUCTION"
+                ? `<span class="price-label">Starting at </span>${formatPrice(listing.startPrice)}`
+                : formatPrice(listing.startPrice);
 
             return `
                 <div class="col-md-4 col-sm-6">
                     <div class="card listing-card h-100" onclick="window.location.href='/seller/listing-detail.html?id=${listing.listingId}'">
-                        ${image}
+                        <div class="card-image-wrapper">
+                            ${imageInner}
+                            ${countdownHtml}
+                        </div>
                         <div class="card-body">
                             <div class="d-flex gap-2 mb-2">${typeBadge} ${statusBadge}</div>
                             <h5 class="card-title">${listing.title}</h5>
-                            <p class="card-text price-tag">${formatPrice(listing.startPrice)}</p>
-                            ${timeInfo}
+                            <p class="card-text price-tag">${priceLabel}</p>
                         </div>
                     </div>
                 </div>
             `;
         }
+
+        function formatCountdown(ms) {
+            if (ms <= 0) return "0s";
+            const totalSec = Math.floor(ms / 1000);
+            const d = Math.floor(totalSec / 86400);
+            const h = Math.floor((totalSec % 86400) / 3600);
+            const m = Math.floor((totalSec % 3600) / 60);
+            const s = totalSec % 60;
+            if (d > 0) return `${d}d ${h}h`;
+            if (h > 0) return `${h}h ${m}m`;
+            if (m > 0) return `${m}m ${s}s`;
+            return `${s}s`;
+        }
+
+        // Live countdown ticker
+        setInterval(() => {
+            document.querySelectorAll(".countdown-overlay[data-target]").forEach(el => {
+                const target = new Date(el.dataset.target);
+                const remaining = target - new Date();
+                if (remaining <= 0) {
+                    el.textContent = el.dataset.type === "start" ? "Starting..." : "Ended";
+                    return;
+                }
+                const prefix = el.dataset.type === "start" ? "Starts in" : "Ends in";
+                el.textContent = `${prefix} ${formatCountdown(remaining)}`;
+                // Flash red when under 1 minute
+                if (el.dataset.type === "end" && remaining < 60000) {
+                    el.classList.remove("countdown-active");
+                    el.classList.add("countdown-ending");
+                }
+            });
+        }, 1000);
 
         loadListings();
     </script>

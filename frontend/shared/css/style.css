@@ -118,6 +118,43 @@ body {
     margin-bottom: 0.25rem;
 }
 
+.listing-card .price-label {
+    font-size: 0.78rem;
+    font-weight: 400;
+    color: var(--bb-text-secondary);
+}
+
+/* Countdown overlay on card image */
+.card-image-wrapper {
+    position: relative;
+}
+
+.countdown-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    text-align: center;
+    background-color: rgba(0, 0, 0, 0.6);
+    color: #fff;
+}
+
+.countdown-overlay.countdown-scheduled {
+    background-color: rgba(59, 130, 246, 0.8);
+}
+
+.countdown-overlay.countdown-active {
+    background-color: rgba(22, 163, 74, 0.75);
+}
+
+.countdown-overlay.countdown-ending {
+    background-color: rgba(220, 38, 38, 0.75);
+}
+
 /* Placeholder for listings without images */
 .img-placeholder {
     height: 180px;

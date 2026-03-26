@@ -6,6 +6,7 @@ and set Timer 2 (auction.close) to market.timers.close.
 """
 
 import json
+import time
 import threading
 import pika
 from os import environ
@@ -75,17 +76,23 @@ def handle_auction_start(channel, method, properties, body):
 
 
 def _consume():
-    """Background thread: connect to RabbitMQ and consume from market.dlq."""
-    connection, channel = connect(amqp_host, amqp_port)
-    amqp_setup.setup(channel)
+    """Background thread: connect to RabbitMQ and consume from market.dlq.
+    Auto-reconnects if the connection drops (heartbeat timeout, broker restart, etc.)."""
+    while True:
+        try:
+            connection, channel = connect(amqp_host, amqp_port)
+            amqp_setup.setup(channel)
 
-    print("Consuming from market.dlq.start...")
-    channel.basic_consume(
-        queue="market.dlq.start",
-        on_message_callback=handle_auction_start,
-        auto_ack=True
-    )
-    channel.start_consuming()
+            print("Consuming from market.dlq.start...")
+            channel.basic_consume(
+                queue="market.dlq.start",
+                on_message_callback=handle_auction_start,
+                auto_ack=True
+            )
+            channel.start_consuming()
+        except Exception as e:
+            print(f"Consumer connection lost: {e}, reconnecting in 2s...")
+            time.sleep(2)
 
 
 def start_consumer(flask_app):

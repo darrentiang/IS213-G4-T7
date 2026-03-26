@@ -11,6 +11,7 @@ FLOW FOR bid.placed:
 """
 
 import json
+import time
 import hashlib
 import requests
 from os import environ
@@ -168,23 +169,27 @@ def handle_listing_event(channel, method, properties, body):
 def start():
     """
     Connect to RabbitMQ, declare queues, and start consuming.
-    Multiple basic_consume calls register multiple queue listeners —
-    pika handles all of them in the single start_consuming() loop.
+    Auto-reconnects if the connection drops.
     """
-    connection, channel = connect(amqp_host, amqp_port)
-    amqp_setup.setup(channel)
+    while True:
+        try:
+            connection, channel = connect(amqp_host, amqp_port)
+            amqp_setup.setup(channel)
 
-    channel.basic_consume(
-        queue="notif.bid",
-        on_message_callback=handle_bid_placed,
-        auto_ack=False
-    )
+            channel.basic_consume(
+                queue="notif.bid",
+                on_message_callback=handle_bid_placed,
+                auto_ack=False
+            )
 
-    channel.basic_consume(
-        queue="notif.listing",
-        on_message_callback=handle_listing_event,
-        auto_ack=False
-    )
+            channel.basic_consume(
+                queue="notif.listing",
+                on_message_callback=handle_listing_event,
+                auto_ack=False
+            )
 
-    print("Dispatch Notification is listening. Waiting for messages...")
-    channel.start_consuming()
+            print("Dispatch Notification is listening. Waiting for messages...")
+            channel.start_consuming()
+        except Exception as e:
+            print(f"Consumer connection lost: {e}, reconnecting in 2s...")
+            time.sleep(2)

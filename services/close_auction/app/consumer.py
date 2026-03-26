@@ -11,6 +11,7 @@ Consumes auction.close from market.dlq.close, then orchestrates:
 """
 
 import json
+import time
 import requests
 from os import environ
 
@@ -155,14 +156,20 @@ def _mark_failed(listing_id, seller_id, channel):
 
 
 def start():
-    """Connect to RabbitMQ and start consuming from market.dlq.close."""
-    connection, channel = connect(amqp_host, amqp_port)
-    amqp_setup.setup(channel)
+    """Connect to RabbitMQ and start consuming from market.dlq.close.
+    Auto-reconnects if the connection drops."""
+    while True:
+        try:
+            connection, channel = connect(amqp_host, amqp_port)
+            amqp_setup.setup(channel)
 
-    print("Close Auction is listening on market.dlq.close. Waiting for messages...")
-    channel.basic_consume(
-        queue="market.dlq.close",
-        on_message_callback=handle_auction_close,
-        auto_ack=False
-    )
-    channel.start_consuming()
+            print("Close Auction is listening on market.dlq.close. Waiting for messages...")
+            channel.basic_consume(
+                queue="market.dlq.close",
+                on_message_callback=handle_auction_close,
+                auto_ack=False
+            )
+            channel.start_consuming()
+        except Exception as e:
+            print(f"Consumer connection lost: {e}, reconnecting in 2s...")
+            time.sleep(2)

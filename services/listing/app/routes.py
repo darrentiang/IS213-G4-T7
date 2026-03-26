@@ -6,9 +6,21 @@ from datetime import datetime
 from flask import Blueprint, request, jsonify
 from app.db import db
 from app.models import Listing
-from app.amqp_lib import publish_message
+from app.amqp_lib import connect, close, publish_message
 
 listing_bp = Blueprint('listing', __name__)
+
+
+def _amqp_publish(publish_fn):
+    """Open a fresh AMQP connection, run publish_fn(channel), then close.
+    Eliminates stale-connection issues entirely."""
+    amqp_host = environ.get("RABBITMQ_HOST") or "localhost"
+    amqp_port = int(environ.get("RABBITMQ_PORT") or 5672)
+    connection, channel = connect(amqp_host, amqp_port)
+    try:
+        publish_fn(channel)
+    finally:
+        close(connection, channel)
 
 
 @listing_bp.route("/listings", methods=['POST'])
@@ -55,40 +67,25 @@ def create_listing():
 
         # if AUCTION, publish events to RabbitMQ
         if listing_type == 'AUCTION':
-            from flask import current_app
-            channel = current_app.config.get('AMQP_CHANNEL')
-
-            # reconnect if channel is dead (heartbeat timeout)
-            if not channel or not channel.is_open:
-                print("AMQP channel dead, reconnecting...")
-                from app.amqp_lib import connect
-                from app import amqp_setup
-                amqp_host = environ.get("RABBITMQ_HOST") or "localhost"
-                amqp_port = int(environ.get("RABBITMQ_PORT") or 5672)
-                conn, channel = connect(amqp_host, amqp_port)
-                amqp_setup.setup(channel)
-                current_app.config['AMQP_CHANNEL'] = channel
-
-            # publish listing.scheduled to market.events
-            publish_message(channel, "market.events", "listing.scheduled", {
-                "listingId": listing.listing_id,
-                "sellerId": listing.seller_id
-            })
-
-            # calculate TTL in milliseconds (time until start_time)
             start_dt = datetime.fromisoformat(data['startTime'])
             ttl_ms = max(int((start_dt - datetime.now()).total_seconds() * 1000), 0)
 
-            # publish auction.start to market.timers.start with TTL
-            publish_message(
-                channel, "", "market.timers.start",
-                {"listingId": listing.listing_id, "type": "auction.start"},
-                properties=pika.BasicProperties(
-                    delivery_mode=2,
-                    expiration=str(ttl_ms)
+            def _publish(channel):
+                publish_message(channel, "market.events", "listing.scheduled", {
+                    "listingId": listing.listing_id,
+                    "sellerId": listing.seller_id
+                })
+                publish_message(
+                    channel, "", "market.timers.start",
+                    {"listingId": listing.listing_id, "type": "auction.start"},
+                    properties=pika.BasicProperties(
+                        delivery_mode=2,
+                        expiration=str(ttl_ms)
+                    )
                 )
-            )
-            print(f"Timer 1 set: auction.start for listing {listing.listing_id} in {ttl_ms}ms")
+                print(f"Timer set: auction.start for listing {listing.listing_id} in {ttl_ms}ms")
+
+            _amqp_publish(_publish)
 
         return jsonify({"code": 201, "data": listing.json()}), 201
 

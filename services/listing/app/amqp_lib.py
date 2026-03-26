@@ -20,7 +20,7 @@ def connect(hostname, port, max_retries=12, retry_interval=5):
                 pika.ConnectionParameters(
                     host=hostname,
                     port=port,
-                    heartbeat=300,
+                    heartbeat=60,
                     blocked_connection_timeout=300,
                 )
             )

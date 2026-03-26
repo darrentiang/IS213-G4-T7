@@ -38,26 +38,6 @@ def get_bids():
 
 @bid_bp.route("/bids", methods=['POST'])
 def create_bid():
-    data = request.get_json()
-    
-    if not data or 'listing_id' not in data or 'buyer_id' not in data or 'amount' not in data:
-        return jsonify({"code": 400, "message": "Missing required fields."}), 400
-    
-    # Before creating the new bid, query the current highest
-    prev_highest = db.session.scalar(
-        db.select(Bid)
-        .filter_by(listing_id=data['listing_id'])
-        .order_by(Bid.amount.desc())
-        .limit(1)
-    )
-    prev_highest_buyer_id = prev_highest.buyer_id if prev_highest else None
-
-    bid = Bid(
-        listing_id=data['listing_id'],
-        buyer_id=data['buyer_id'],
-        amount=data['amount']
-    )
-
     try:
         if not request.is_json:
             return jsonify({"code": 400, "message": "Request must be JSON."}), 400
@@ -67,6 +47,15 @@ def create_bid():
         for field in ('listingId', 'buyerId', 'amount'):
             if field not in data:
                 return jsonify({"code": 400, "message": f"Missing required field: {field}"}), 400
+
+        # Before creating the new bid, query the current highest
+        prev_highest = db.session.scalar(
+            db.select(Bid)
+            .filter_by(listing_id=data['listingId'])
+            .order_by(Bid.amount.desc()) # type: ignore
+            .limit(1)
+        )
+        prev_highest_buyer_id = prev_highest.buyer_id if prev_highest else None
 
         bid = Bid(
             listing_id=data['listingId'],

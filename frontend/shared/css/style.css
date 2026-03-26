@@ -15,6 +15,7 @@ body {
     color: var(--bb-text);
     background-color: var(--bb-bg);
     -webkit-font-smoothing: antialiased;
+    padding-bottom: 4rem;
 }
 
 /* ── Navbar ── */
@@ -40,67 +41,6 @@ body {
 .navbar .navbar-text span {
     color: var(--bb-nav-text);
     font-weight: 500;
-}
-
-/* Buyer navbar variant */
-.navbar-buyer {
-    background-color: #eff6ff !important;
-    border-bottom: 1px solid #dbeafe;
-}
-
-.navbar-buyer .navbar-text span {
-    color: #1e40af;
-}
-
-/* Navbar right-side links */
-.navbar .nav-link-right {
-    font-size: 0.82rem;
-    font-weight: 500;
-    color: var(--bb-text-secondary);
-    text-decoration: none;
-}
-
-.navbar .nav-link-right:hover {
-    color: var(--bb-text);
-}
-
-.navbar .nav-link-right.nav-link-active {
-    color: var(--bb-text);
-}
-
-.navbar .container {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-/* ── Filter tabs ── */
-.filter-tabs {
-    display: flex;
-    gap: 0.35rem;
-}
-
-.filter-tab {
-    background: none;
-    border: 1px solid var(--bb-border);
-    border-radius: 6px;
-    padding: 0.3rem 0.85rem;
-    font-size: 0.82rem;
-    font-weight: 500;
-    color: var(--bb-text-secondary);
-    cursor: pointer;
-    transition: all 0.15s ease;
-}
-
-.filter-tab:hover {
-    border-color: #b0b4ba;
-    color: var(--bb-text);
-}
-
-.filter-tab.active {
-    background-color: var(--bb-text);
-    border-color: var(--bb-text);
-    color: #fff;
 }
 
 /* ── Page header ── */

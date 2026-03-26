@@ -221,6 +221,37 @@ services:
       - bidboard-net
 
   ####################################
+  # Close Auction: composite (consumer only)
+  ####################################
+  close-auction:
+    build:
+      context: ./services/close_auction
+      dockerfile: Dockerfile
+    container_name: close-auction
+    restart: always
+    environment:
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - LISTING_SERVICE_URL=http://listing:5001
+      - BID_SERVICE_URL=http://bid:5002
+      - USER_SERVICE_URL=http://user:5004
+      - PAYMENT_SERVICE_URL=http://payment:5005
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      rabbitmq:
+        condition: service_started
+      listing:
+        condition: service_started
+      bid:
+        condition: service_started
+      user:
+        condition: service_started
+      payment:
+        condition: service_started
+    networks:
+      - bidboard-net
+
+  ####################################
   # Offer Service: Flask (port 5003)
   ####################################
   offer:

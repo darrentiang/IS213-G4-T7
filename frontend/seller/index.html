@@ -137,13 +137,22 @@
             return `${s}s`;
         }
 
-        // Live countdown ticker
+        // Live countdown ticker — re-fetches listings when a countdown ends
+        let pendingRefresh = false;
         setInterval(() => {
             document.querySelectorAll(".countdown-overlay[data-target]").forEach(el => {
                 const target = new Date(el.dataset.target);
                 const remaining = target - new Date();
                 if (remaining <= 0) {
                     el.textContent = el.dataset.type === "start" ? "Starting..." : "Ended";
+                    // Schedule a one-time refresh to pick up the new status
+                    if (!pendingRefresh) {
+                        pendingRefresh = true;
+                        setTimeout(() => {
+                            loadListings();
+                            pendingRefresh = false;
+                        }, 5000);
+                    }
                     return;
                 }
                 const prefix = el.dataset.type === "start" ? "Starts in" : "Ends in";

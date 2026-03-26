@@ -1,8 +1,8 @@
 """
 DLQ Consumer for the Listing service (runs as background thread).
-Listens on market.dlq for auction.start messages (Timer 1).
+Listens on market.dlq.start for auction.start messages (Timer 1).
 When Timer 1 fires: set listing ACTIVE, publish listing.active,
-and set Timer 2 (auction.close).
+and set Timer 2 (auction.close) to market.timers.close.
 """
 
 import json
@@ -61,7 +61,7 @@ def handle_auction_start(channel, method, properties, body):
             ttl_ms = max(int((listing.end_time - datetime.now()).total_seconds() * 1000), 0)
 
             publish_message(
-                channel, "", "market.timers",
+                channel, "", "market.timers.close",
                 {"listingId": listing.listing_id, "type": "auction.close"},
                 properties=pika.BasicProperties(
                     delivery_mode=2,
@@ -79,9 +79,9 @@ def _consume():
     connection, channel = connect(amqp_host, amqp_port)
     amqp_setup.setup(channel)
 
-    print("Consuming from market.dlq...")
+    print("Consuming from market.dlq.start...")
     channel.basic_consume(
-        queue="market.dlq",
+        queue="market.dlq.start",
         on_message_callback=handle_auction_start,
         auto_ack=True
     )

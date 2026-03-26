@@ -70,9 +70,9 @@ def create_listing():
             start_dt = datetime.fromisoformat(data['startTime'])
             ttl_ms = max(int((start_dt - datetime.now()).total_seconds() * 1000), 0)
 
-            # publish auction.start to market.timers with TTL
+            # publish auction.start to market.timers.start with TTL
             publish_message(
-                channel, "", "market.timers",
+                channel, "", "market.timers.start",
                 {"listingId": listing.listing_id, "type": "auction.start"},
                 properties=pika.BasicProperties(
                     delivery_mode=2,

@@ -12,20 +12,37 @@ def setup(channel):
         durable=True
     )
 
-    # market.timers queue: messages sit here until TTL expires,
-    # then dead-letter to market.dlq
+    # market.timers.start: holds auction.start messages until TTL expires,
+    # then dead-letters to market.dlq.start (consumed by Listing)
     channel.queue_declare(
-        queue="market.timers",
+        queue="market.timers.start",
         durable=True,
         arguments={
             "x-dead-letter-exchange": "",
-            "x-dead-letter-routing-key": "market.dlq"
+            "x-dead-letter-routing-key": "market.dlq.start"
         }
     )
 
-    # market.dlq: receives expired messages from market.timers
+    # market.dlq.start: receives expired auction.start messages
     channel.queue_declare(
-        queue="market.dlq",
+        queue="market.dlq.start",
+        durable=True
+    )
+
+    # market.timers.close: holds auction.close messages until TTL expires,
+    # then dead-letters to market.dlq.close (consumed by Close Auction)
+    channel.queue_declare(
+        queue="market.timers.close",
+        durable=True,
+        arguments={
+            "x-dead-letter-exchange": "",
+            "x-dead-letter-routing-key": "market.dlq.close"
+        }
+    )
+
+    # market.dlq.close: receives expired auction.close messages
+    channel.queue_declare(
+        queue="market.dlq.close",
         durable=True
     )
 

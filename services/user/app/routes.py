@@ -16,7 +16,7 @@ def create_user():
 
         data = request.get_json()
 
-        for field in ('email', 'name', 'stripe_id'):
+        for field in ('email', 'name', 'stripeId'):
             if field not in data:
                 return jsonify({
                     "code": 400,
@@ -26,7 +26,7 @@ def create_user():
         user = User(
             email=data['email'],
             name=data['name'],
-            stripe_id=data['stripe_id']
+            stripe_id=data['stripeId']
         )
         db.session.add(user)
         db.session.commit()

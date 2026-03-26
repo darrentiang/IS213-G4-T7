@@ -19,9 +19,9 @@ class User(db.Model):
 
     def json(self):
         return {
-            "user_id": self.user_id,
+            "userId": self.user_id,
             "email": self.email,
             "name": self.name,
-            "stripe_id": self.stripe_id,
-            "created_at": self.created_at.isoformat()
+            "stripeId": self.stripe_id,
+            "createdAt": self.created_at.isoformat()
         }

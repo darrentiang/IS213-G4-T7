@@ -34,16 +34,16 @@ class Listing(db.Model):
 
     def json(self):
         return {
-            "listing_id": self.listing_id,
-            "seller_id": self.seller_id,
+            "listingId": self.listing_id,
+            "sellerId": self.seller_id,
             "title": self.title,
             "description": self.description,
-            "image_url": self.image_url,
-            "listing_type": self.listing_type,
-            "start_price": float(self.start_price),
-            "start_time": self.start_time.isoformat() if self.start_time else None,
-            "end_time": self.end_time.isoformat() if self.end_time else None,
+            "imageUrl": self.image_url,
+            "listingType": self.listing_type,
+            "startPrice": float(self.start_price),
+            "startTime": self.start_time.isoformat() if self.start_time else None,
+            "endTime": self.end_time.isoformat() if self.end_time else None,
             "status": self.status,
-            "winning_buyer_id": self.winning_buyer_id,
-            "created_at": self.created_at.isoformat()
+            "winningBuyerId": self.winning_buyer_id,
+            "createdAt": self.created_at.isoformat()
         }

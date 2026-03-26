@@ -64,13 +64,13 @@ def create_bid():
 
         data = request.get_json()
 
-        for field in ('listing_id', 'buyer_id', 'amount'):
+        for field in ('listingId', 'buyerId', 'amount'):
             if field not in data:
                 return jsonify({"code": 400, "message": f"Missing required field: {field}"}), 400
 
         bid = Bid(
-            listing_id=data['listing_id'],
-            buyer_id=data['buyer_id'],
+            listing_id=data['listingId'],
+            buyer_id=data['buyerId'],
             amount=data['amount']
         )
         db.session.add(bid)

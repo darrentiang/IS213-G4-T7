@@ -1,6 +1,7 @@
 # defines the API endpoints (HTTP routes)
 
 import pika
+from os import environ
 from datetime import datetime
 from flask import Blueprint, request, jsonify
 from app.db import db
@@ -56,9 +57,17 @@ def create_listing():
         if listing_type == 'AUCTION':
             from flask import current_app
             channel = current_app.config.get('AMQP_CHANNEL')
-            print(f"AMQP channel: {channel}")
-            if not channel:
-                print("WARNING: No AMQP channel available, skipping publish")
+
+            # reconnect if channel is dead (heartbeat timeout)
+            if not channel or not channel.is_open:
+                print("AMQP channel dead, reconnecting...")
+                from app.amqp_lib import connect
+                from app import amqp_setup
+                amqp_host = environ.get("RABBITMQ_HOST") or "localhost"
+                amqp_port = int(environ.get("RABBITMQ_PORT") or 5672)
+                conn, channel = connect(amqp_host, amqp_port)
+                amqp_setup.setup(channel)
+                current_app.config['AMQP_CHANNEL'] = channel
 
             # publish listing.scheduled to market.events
             publish_message(channel, "market.events", "listing.scheduled", {

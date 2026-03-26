@@ -163,6 +163,7 @@ services:
       - dbURL=mysql+mysqlconnector://root:root@listing-db:3306/listing_db
       - RABBITMQ_HOST=rabbitmq
       - RABBITMQ_PORT=5672
+      - PYTHONUNBUFFERED=1
     depends_on:
       listing-db:
         condition: service_healthy

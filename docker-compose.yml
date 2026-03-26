@@ -9,6 +9,8 @@ volumes:
     name: bidboard_listing_db_data
   offer_db_data:
     name: bidboard_offer_db_data
+  payment_db_data:
+    name: bidboard_payment_db_data
 
 networks:
   bidboard-net:
@@ -97,6 +99,28 @@ services:
     volumes:
       - offer_db_data:/var/lib/mysql
       - ./services/offer/offer.sql:/docker-entrypoint-initdb.d/offer.sql
+    networks:
+      - bidboard-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ####################################
+  # MySQL: payment_db
+  ####################################
+  payment-db:
+    image: mysql:8.0
+    container_name: payment-db
+    restart: always
+    ports:
+      - "3311:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      - payment_db_data:/var/lib/mysql
+      - ./services/payment/payment.sql:/docker-entrypoint-initdb.d/payment.sql
     networks:
       - bidboard-net
     healthcheck:
@@ -211,6 +235,25 @@ services:
       - dbURL=mysql+mysqlconnector://root:root@offer-db:3306/offer_db
     depends_on:
       offer-db:
+        condition: service_healthy
+    networks:
+      - bidboard-net
+
+  ####################################
+  # Payment Service: Flask (port 5005)
+  ####################################
+  payment:
+    build:
+      context: ./services/payment
+      dockerfile: Dockerfile
+    container_name: payment
+    restart: always
+    ports:
+      - "5005:5005"
+    environment:
+      - dbURL=mysql+mysqlconnector://root:root@payment-db:3306/payment_db
+    depends_on:
+      payment-db:
         condition: service_healthy
     networks:
       - bidboard-net

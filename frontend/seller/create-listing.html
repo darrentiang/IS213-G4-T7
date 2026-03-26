@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BidBoard — Create Listing</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/shared/css/style.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Seller navbar -->
+    <nav class="navbar">
+        <div class="container">
+            <span class="navbar-text">Seller: <span id="navbar-user-name">Loading...</span></span>
+        </div>
+    </nav>
+
+    <div class="container mt-4" style="max-width: 720px;">
+        <div class="page-header">
+            <h2>Create New Listing</h2>
+            <a href="/seller/" class="btn-action">Back to Listings</a>
+        </div>
+
+        <!-- Success / error alerts -->
+        <div id="alert-container"></div>
+
+        <form id="create-listing-form">
+            <!-- Listing Type -->
+            <div class="form-section">
+                <label class="form-label fw-semibold">Listing Type</label>
+                <div class="d-flex gap-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="listingType" id="type-auction" value="AUCTION" checked>
+                        <label class="form-check-label" for="type-auction">Timed Auction</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="listingType" id="type-fixed" value="FIXED">
+                        <label class="form-check-label" for="type-fixed">Fixed Price</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Basic Info -->
+            <div class="form-section">
+                <div class="mb-3">
+                    <label for="title" class="form-label fw-semibold">Title <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="title" required placeholder="e.g. Vintage Rolex Watch">
+                </div>
+                <div class="mb-3">
+                    <label for="description" class="form-label fw-semibold">Description</label>
+                    <textarea class="form-control" id="description" rows="3" placeholder="Describe your item..."></textarea>
+                </div>
+                <div class="mb-3">
+                    <label for="imageUrl" class="form-label fw-semibold">Image URL</label>
+                    <input type="url" class="form-control" id="imageUrl" placeholder="https://example.com/image.jpg">
+                </div>
+                <div class="mb-3">
+                    <label for="startPrice" class="form-label fw-semibold">Starting Price ($) <span class="text-danger">*</span></label>
+                    <input type="number" class="form-control" id="startPrice" step="0.01" min="0.01" required placeholder="0.00">
+                </div>
+            </div>
+
+            <!-- Auction Time Fields (shown only for AUCTION) -->
+            <div class="form-section" id="auction-fields">
+                <h6 class="fw-semibold mb-3">Auction Schedule</h6>
+                <p class="text-muted small mb-3">
+                    Times must be in UTC. Your local time (SGT) is UTC+8.
+                </p>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="startTime" class="form-label fw-semibold">Start Time (UTC) <span class="text-danger">*</span></label>
+                        <input type="datetime-local" class="form-control" id="startTime">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="endTime" class="form-label fw-semibold">End Time (UTC) <span class="text-danger">*</span></label>
+                        <input type="datetime-local" class="form-control" id="endTime">
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-dark btn-lg w-100" id="submit-btn">Create Listing</button>
+        </form>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/shared/js/config.js"></script>
+    <script src="/shared/js/api.js"></script>
+    <script>
+        // Load seller name in navbar
+        loadNavbarUser(CONFIG.SELLER_ID);
+
+        // Toggle auction fields based on listing type
+        const typeRadios = document.querySelectorAll('input[name="listingType"]');
+        const auctionFields = document.getElementById("auction-fields");
+        const startTimeInput = document.getElementById("startTime");
+        const endTimeInput = document.getElementById("endTime");
+
+        typeRadios.forEach(radio => {
+            radio.addEventListener("change", () => {
+                const isAuction = document.getElementById("type-auction").checked;
+                auctionFields.style.display = isAuction ? "block" : "none";
+                startTimeInput.required = isAuction;
+                endTimeInput.required = isAuction;
+            });
+        });
+
+        // Pre-populate times for demo convenience (UTC)
+        function prefillTimes() {
+            const now = new Date();
+            const start = new Date(now.getTime() + 1 * 60 * 1000); // +1 min
+            const end = new Date(now.getTime() + 6 * 60 * 1000);   // +6 min
+
+            // Format as YYYY-MM-DDTHH:MM for datetime-local (in UTC)
+            const pad = (n) => String(n).padStart(2, "0");
+            const toLocal = (d) =>
+                `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}T${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
+
+            startTimeInput.value = toLocal(start);
+            endTimeInput.value = toLocal(end);
+        }
+        prefillTimes();
+
+        // Form submission
+        document.getElementById("create-listing-form").addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const submitBtn = document.getElementById("submit-btn");
+            submitBtn.disabled = true;
+            submitBtn.textContent = "Creating...";
+
+            const listingType = document.querySelector('input[name="listingType"]:checked').value;
+
+            const body = {
+                sellerId: CONFIG.SELLER_ID,
+                title: document.getElementById("title").value.trim(),
+                description: document.getElementById("description").value.trim() || null,
+                imageUrl: document.getElementById("imageUrl").value.trim() || null,
+                listingType: listingType,
+                startPrice: parseFloat(document.getElementById("startPrice").value),
+            };
+
+            if (listingType === "AUCTION") {
+                body.startTime = document.getElementById("startTime").value + ":00";
+                body.endTime = document.getElementById("endTime").value + ":00";
+            }
+
+            try {
+                const data = await apiFetch(`${CONFIG.LISTING_API}/listings`, {
+                    method: "POST",
+                    body: JSON.stringify(body),
+                });
+
+                showAlert("success",
+                    `Listing created! ID: ${data.listingId} — Status: ${data.status}` +
+                    (listingType === "AUCTION" ? ". Timer has been set." : "")
+                );
+
+                setTimeout(() => {
+                    window.location.href = "/seller/";
+                }, 2000);
+
+            } catch (err) {
+                showAlert("danger", err.message);
+                submitBtn.disabled = false;
+                submitBtn.textContent = "Create Listing";
+            }
+        });
+
+        function showAlert(type, message) {
+            document.getElementById("alert-container").innerHTML =
+                `<div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>`;
+        }
+    </script>
+</body>
+</html>

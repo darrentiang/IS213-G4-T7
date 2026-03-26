@@ -290,6 +290,23 @@ services:
       - bidboard-net
 
   ####################################
+  # Frontend: Nginx (port 8080)
+  ####################################
+  frontend:
+    image: nginx:alpine
+    container_name: frontend
+    restart: always
+    ports:
+      - "8080:80"
+    volumes:
+      - ./frontend/shared:/usr/share/nginx/html/shared
+      - ./frontend/seller:/usr/share/nginx/html/seller
+      - ./frontend/buyer:/usr/share/nginx/html/buyer
+      - ./frontend/nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - bidboard-net
+
+  ####################################
   # RabbitMQ: messaging broker
   ####################################
   rabbitmq:

@@ -1,0 +1,321 @@
+/* BidBoard shared styles — clean minimal theme on top of Bootstrap 5 */
+
+:root {
+    --bb-text: #1a1a1a;
+    --bb-text-secondary: #6b7280;
+    --bb-border: #e5e7eb;
+    --bb-bg: #fafafa;
+    --bb-bg-section: #f5f5f5;
+    --bb-nav-bg: #f3f4f6;
+    --bb-nav-text: #1a1a1a;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, sans-serif;
+    color: var(--bb-text);
+    background-color: var(--bb-bg);
+    -webkit-font-smoothing: antialiased;
+}
+
+/* ── Navbar ── */
+.navbar {
+    background-color: var(--bb-nav-bg) !important;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 0.6rem 0;
+}
+
+.navbar .navbar-brand {
+    font-weight: 600;
+    font-size: 1.1rem;
+    letter-spacing: -0.01em;
+    color: var(--bb-nav-text) !important;
+}
+
+.navbar .navbar-text {
+    font-size: 0.82rem;
+    color: var(--bb-text-secondary) !important;
+    font-weight: 400;
+}
+
+.navbar .navbar-text span {
+    color: var(--bb-nav-text);
+    font-weight: 500;
+}
+
+/* ── Page header ── */
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.75rem;
+}
+
+.page-header h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--bb-text);
+    margin: 0;
+}
+
+.page-header .btn-action {
+    background-color: var(--bb-text);
+    color: #fff;
+    font-size: 0.82rem;
+    font-weight: 500;
+    border: none;
+    border-radius: 20px;
+    padding: 0.4rem 1rem;
+    text-decoration: none;
+    transition: background-color 0.15s ease;
+}
+
+.page-header .btn-action:hover {
+    background-color: #333;
+    color: #fff;
+}
+
+/* ── Listing cards ── */
+.listing-card {
+    cursor: pointer;
+    transition: border-color 0.15s ease;
+    border: 1px solid var(--bb-border);
+    border-radius: 10px;
+    overflow: hidden;
+    background: #fff;
+}
+
+.listing-card:hover {
+    border-color: #b0b4ba;
+}
+
+.listing-card .card-body {
+    padding: 1rem 1.1rem;
+}
+
+.listing-card .card-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--bb-text);
+    margin-bottom: 0.35rem;
+}
+
+.listing-card .card-img-top {
+    height: 180px;
+    object-fit: cover;
+    background-color: #f0f0f0;
+}
+
+.listing-card .card-text.small {
+    font-size: 0.78rem;
+    color: var(--bb-text-secondary);
+}
+
+/* Price in cards */
+.listing-card .price-tag {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #16a34a;
+    margin-bottom: 0.25rem;
+}
+
+/* Placeholder for listings without images */
+.img-placeholder {
+    height: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f3f4f6;
+    color: #9ca3af;
+    font-size: 0.82rem;
+    font-weight: 400;
+}
+
+/* ── Badges (outline style) ── */
+.badge {
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    border-radius: 5px;
+    padding: 0.2em 0.55em;
+    text-transform: uppercase;
+}
+
+/* Type badges */
+.badge-auction {
+    border: 1px solid #7c3aed;
+    color: #7c3aed;
+    background-color: rgba(124, 58, 237, 0.06);
+}
+
+.badge-fixed {
+    border: 1px solid #0891b2;
+    color: #0891b2;
+    background-color: rgba(8, 145, 178, 0.06);
+}
+
+/* Status badges */
+.badge-status-scheduled {
+    border: 1px solid #3b82f6;
+    color: #3b82f6;
+    background-color: rgba(59, 130, 246, 0.06);
+}
+
+.badge-status-active {
+    border: 1px solid #16a34a;
+    color: #16a34a;
+    background-color: rgba(22, 163, 74, 0.06);
+}
+
+.badge-status-closed-pending {
+    border: 1px solid #d97706;
+    color: #d97706;
+    background-color: rgba(217, 119, 6, 0.06);
+}
+
+.badge-status-sold {
+    border: 1px solid #374151;
+    color: #374151;
+    background-color: rgba(55, 65, 81, 0.06);
+}
+
+.badge-status-failed {
+    border: 1px solid #dc2626;
+    color: #dc2626;
+    background-color: rgba(220, 38, 38, 0.06);
+}
+
+.badge-status-default {
+    border: 1px solid #9ca3af;
+    color: #9ca3af;
+    background-color: rgba(156, 163, 175, 0.06);
+}
+
+/* Offer badges */
+.badge-offer-pending {
+    border: 1px solid #d97706;
+    color: #d97706;
+    background-color: rgba(217, 119, 6, 0.06);
+}
+
+.badge-offer-countered {
+    border: 1px solid #ea580c;
+    color: #ea580c;
+    background-color: rgba(234, 88, 12, 0.06);
+}
+
+.badge-offer-accepted {
+    border: 1px solid #16a34a;
+    color: #16a34a;
+    background-color: rgba(22, 163, 74, 0.06);
+}
+
+.badge-offer-rejected {
+    border: 1px solid #dc2626;
+    color: #dc2626;
+    background-color: rgba(220, 38, 38, 0.06);
+}
+
+.badge-offer-cancelled {
+    border: 1px solid #9ca3af;
+    color: #9ca3af;
+    background-color: rgba(156, 163, 175, 0.06);
+}
+
+.badge-offer-default {
+    border: 1px solid #9ca3af;
+    color: #9ca3af;
+    background-color: rgba(156, 163, 175, 0.06);
+}
+
+/* ── Price display (detail pages) ── */
+.price-display {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: #16a34a;
+}
+
+/* ── Tables ── */
+.table th {
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--bb-text-secondary);
+    border-bottom-width: 1px;
+}
+
+.table td {
+    font-size: 0.875rem;
+    vertical-align: middle;
+}
+
+/* ── Alerts ── */
+.alert {
+    border-radius: 8px;
+    font-size: 0.875rem;
+}
+
+/* ── Form sections ── */
+.form-section {
+    background-color: var(--bb-bg-section);
+    border: 1px solid var(--bb-border);
+    border-radius: 8px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.25rem;
+}
+
+.form-label {
+    font-size: 0.85rem;
+    color: var(--bb-text);
+}
+
+.form-control, .form-select {
+    font-size: 0.875rem;
+    border: 1px solid var(--bb-border);
+    border-radius: 6px;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #9ca3af;
+    box-shadow: none;
+}
+
+/* ── Buttons ── */
+.btn-dark {
+    background-color: var(--bb-text);
+    border-color: var(--bb-text);
+    font-size: 0.875rem;
+    font-weight: 500;
+    border-radius: 8px;
+    padding: 0.5rem 1.25rem;
+}
+
+.btn-dark:hover {
+    background-color: #333;
+    border-color: #333;
+}
+
+.btn-outline-secondary {
+    font-size: 0.85rem;
+    font-weight: 500;
+    border-radius: 6px;
+    color: var(--bb-text-secondary);
+    border-color: var(--bb-border);
+}
+
+.btn-outline-secondary:hover {
+    background-color: var(--bb-bg-section);
+    border-color: #b0b4ba;
+    color: var(--bb-text);
+}
+
+/* ── Empty state ── */
+#empty-state p {
+    color: var(--bb-text-secondary);
+    font-size: 1rem;
+}
+
+/* ── Spinner ── */
+.spinner-border {
+    color: #9ca3af !important;
+}

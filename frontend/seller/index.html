@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BidBoard — Seller Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/shared/css/style.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Seller navbar -->
+    <nav class="navbar">
+        <div class="container">
+            <span class="navbar-text">Seller: <span id="navbar-user-name">Loading...</span></span>
+        </div>
+    </nav>
+
+    <div class="container" style="margin-top: 2.5rem;">
+        <div class="page-header">
+            <h2>My Listings</h2>
+            <a href="/seller/create-listing.html" class="btn-action">+ Create Listing</a>
+        </div>
+
+        <!-- Loading spinner -->
+        <div id="loading" class="text-center py-5">
+            <div class="spinner-border text-secondary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+
+        <!-- Empty state -->
+        <div id="empty-state" class="text-center py-5" style="display: none;">
+            <p class="text-muted fs-5">You don't have any listings yet.</p>
+            <a href="/seller/create-listing.html" class="btn btn-dark">Create Your First Listing</a>
+        </div>
+
+        <!-- Listing cards grid -->
+        <div id="listings-grid" class="row g-4" style="display: none;"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/shared/js/config.js"></script>
+    <script src="/shared/js/api.js"></script>
+    <script>
+        loadNavbarUser(CONFIG.SELLER_ID);
+
+        async function loadListings() {
+            try {
+                const result = await apiFetch(`${CONFIG.LISTING_API}/listings`);
+                const listings = result.listings || [];
+
+                // Filter to only this seller's listings
+                const myListings = listings.filter(l => l.sellerId === CONFIG.SELLER_ID);
+
+                const loading = document.getElementById("loading");
+                const emptyState = document.getElementById("empty-state");
+                const grid = document.getElementById("listings-grid");
+
+                loading.style.display = "none";
+
+                if (myListings.length === 0) {
+                    emptyState.style.display = "block";
+                    return;
+                }
+
+                grid.style.display = "flex";
+                grid.innerHTML = myListings.map(listing => createListingCard(listing)).join("");
+
+            } catch (err) {
+                // If 404 (no listings), show empty state
+                document.getElementById("loading").style.display = "none";
+                document.getElementById("empty-state").style.display = "block";
+            }
+        }
+
+        function createListingCard(listing) {
+            const typeBadge = listing.listingType === "AUCTION"
+                ? `<span class="badge badge-auction">AUCTION</span>`
+                : `<span class="badge badge-fixed">FIXED</span>`;
+
+            const statusBadge = `<span class="badge ${statusBadgeClass(listing.status)}">${listing.status}</span>`;
+
+            const image = listing.imageUrl
+                ? `<img src="${listing.imageUrl}" class="card-img-top" alt="${listing.title}" onerror="this.outerHTML='<div class=\\'img-placeholder\\'>No Image</div>'">`
+                : `<div class="img-placeholder">No Image</div>`;
+
+            const timeInfo = listing.listingType === "AUCTION"
+                ? `<p class="card-text small text-muted mb-1">Start: ${formatDateTime(listing.startTime)}</p>
+                   <p class="card-text small text-muted">End: ${formatDateTime(listing.endTime)}</p>`
+                : "";
+
+            return `
+                <div class="col-md-4 col-sm-6">
+                    <div class="card listing-card h-100" onclick="window.location.href='/seller/listing-detail.html?id=${listing.listingId}'">
+                        ${image}
+                        <div class="card-body">
+                            <div class="d-flex gap-2 mb-2">${typeBadge} ${statusBadge}</div>
+                            <h5 class="card-title">${listing.title}</h5>
+                            <p class="card-text price-tag">${formatPrice(listing.startPrice)}</p>
+                            ${timeInfo}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        loadListings();
+    </script>
+</body>
+</html>

@@ -156,6 +156,10 @@ body {
     background-color: rgba(220, 38, 38, 0.75);
 }
 
+.countdown-overlay.countdown-ended {
+    background-color: rgba(55, 65, 81, 0.75);
+}
+
 /* Placeholder for listings without images */
 .img-placeholder {
     height: 180px;

@@ -20,13 +20,10 @@ def get_offers():
 
     offers = db.session.scalars(query).all()
 
-    if offers:
-        return jsonify({
-            "code": 200,
-            "data": {"offers": [o.json() for o in offers]}
-        }), 200
-
-    return jsonify({"code": 404, "message": "No offers found."}), 404
+    return jsonify({
+        "code": 200,
+        "data": {"offers": [o.json() for o in offers]}
+    }), 200
 
 
 @offer_bp.route("/offers", methods=['POST'])

@@ -61,8 +61,7 @@
                 const result = await apiFetch(`${CONFIG.LISTING_API}/listings`);
                 const listings = result.listings || [];
 
-                // Only show ACTIVE listings to buyers
-                allListings = listings.filter(l => l.status === "ACTIVE");
+                allListings = listings;
 
                 const loading = document.getElementById("loading");
                 loading.style.display = "none";
@@ -99,19 +98,29 @@
                 ? `<span class="badge badge-auction">AUCTION</span>`
                 : `<span class="badge badge-fixed">FIXED</span>`;
 
+            const statusBadge = `<span class="badge ${statusBadgeClass(listing.status)}">${statusLabel(listing.status)}</span>`;
+
             const imageInner = listing.imageUrl
                 ? `<img src="${listing.imageUrl}" class="card-img-top" alt="${listing.title}" onerror="this.outerHTML='<div class=\\'img-placeholder\\'>No Image</div>'">`
                 : `<div class="img-placeholder">No Image</div>`;
 
             // Countdown overlay for auctions
             let countdownHtml = "";
-            if (listing.listingType === "AUCTION" && listing.endTime) {
+            if (listing.listingType === "AUCTION" && listing.startTime && listing.endTime) {
                 const now = new Date();
+                const start = parseUtcDate(listing.startTime);
                 const end = parseUtcDate(listing.endTime);
-                if (end > now) {
+
+                if (listing.status === "SCHEDULED" && start > now) {
+                    const text = formatCountdown(start - now);
+                    countdownHtml = `<div class="countdown-overlay countdown-scheduled" data-target="${start.toISOString()}" data-type="start">Starts in ${text}</div>`;
+                } else if (listing.status === "ACTIVE" && end > now) {
                     const remaining = end - now;
                     const cls = remaining < 60000 ? "countdown-ending" : "countdown-active";
-                    countdownHtml = `<div class="countdown-overlay ${cls}" data-target="${end.toISOString()}" data-type="end">Ends in ${formatCountdown(remaining)}</div>`;
+                    const text = formatCountdown(remaining);
+                    countdownHtml = `<div class="countdown-overlay ${cls}" data-target="${end.toISOString()}" data-type="end">Ends in ${text}</div>`;
+                } else if (["CLOSED_PENDING_PAYMENT", "SOLD", "FAILED_NO_ELIGIBLE_BIDDER"].includes(listing.status)) {
+                    countdownHtml = `<div class="countdown-overlay countdown-ended">Auction Ended</div>`;
                 }
             }
 
@@ -128,7 +137,7 @@
                             ${countdownHtml}
                         </div>
                         <div class="card-body">
-                            <div class="d-flex gap-2 mb-2">${typeBadge}</div>
+                            <div class="d-flex gap-2 mb-2">${typeBadge} ${statusBadge}</div>
                             <h5 class="card-title">${listing.title}</h5>
                             <p class="card-text price-tag">${priceLabel}</p>
                         </div>

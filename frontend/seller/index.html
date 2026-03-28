@@ -99,6 +99,8 @@
                     const cls = remaining < 60000 ? "countdown-ending" : "countdown-active";
                     const text = formatCountdown(remaining);
                     countdownHtml = `<div class="countdown-overlay ${cls}" data-target="${end.toISOString()}" data-type="end">Ends in ${text}</div>`;
+                } else if (listing.status === "ACTIVE" && end <= now) {
+                    countdownHtml = `<div class="countdown-overlay countdown-ended">Auction Ended</div>`;
                 } else if (["CLOSED_PENDING_PAYMENT", "SOLD", "FAILED_NO_ELIGIBLE_BIDDER"].includes(listing.status)) {
                     countdownHtml = `<div class="countdown-overlay countdown-ended">Auction Ended</div>`;
                 }

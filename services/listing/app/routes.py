@@ -100,13 +100,10 @@ def create_listing():
 def get_all_listings():
     listings = db.session.scalars(db.select(Listing)).all()
 
-    if listings:
-        return jsonify({
-            "code": 200,
-            "data": {"listings": [l.json() for l in listings]}
-        }), 200
-
-    return jsonify({"code": 404, "message": "No listings found."}), 404
+    return jsonify({
+        "code": 200,
+        "data": {"listings": [l.json() for l in listings]}
+    }), 200
 
 
 @listing_bp.route("/listings/<int:listing_id>")

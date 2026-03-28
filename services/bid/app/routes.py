@@ -27,13 +27,10 @@ def get_bids():
         bids = db.session.scalars(db.select(Bid)).all()
         message = "No bids found."
 
-    if bids:
-        return jsonify({
-            "code": 200,
-            "data": {"bids": [bid.json() for bid in bids]}
-        }), 200
-
-    return jsonify({"code": 404, "message": message}), 404
+    return jsonify({
+        "code": 200,
+        "data": {"bids": [bid.json() for bid in bids]}
+    }), 200
 
 
 @bid_bp.route("/bids", methods=['POST'])

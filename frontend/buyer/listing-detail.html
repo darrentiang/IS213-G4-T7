@@ -137,13 +137,21 @@
                 // Countdown
                 const countdownEl = document.getElementById("countdown-container");
                 countdownEl.innerHTML = "";
-                if (listing.listingType === "AUCTION" && listing.endTime && listing.status === "ACTIVE") {
+                if (listing.listingType === "AUCTION" && listing.startTime && listing.endTime) {
                     const now = new Date();
+                    const start = parseUtcDate(listing.startTime);
                     const end = parseUtcDate(listing.endTime);
-                    if (end > now) {
+
+                    if (listing.status === "SCHEDULED" && start > now) {
+                        countdownEl.innerHTML = `<div class="countdown-overlay countdown-scheduled" data-target="${start.toISOString()}" data-type="start">Starts in ${formatCountdown(start - now)}</div>`;
+                    } else if (listing.status === "ACTIVE" && end > now) {
                         const remaining = end - now;
                         const cls = remaining < 60000 ? "countdown-ending" : "countdown-active";
                         countdownEl.innerHTML = `<div class="countdown-overlay ${cls}" data-target="${end.toISOString()}" data-type="end">Ends in ${formatCountdown(remaining)}</div>`;
+                    } else if (listing.status === "ACTIVE" && end <= now) {
+                        countdownEl.innerHTML = `<div class="countdown-overlay countdown-ended">Auction Ended</div>`;
+                    } else if (["CLOSED_PENDING_PAYMENT", "SOLD", "FAILED_NO_ELIGIBLE_BIDDER"].includes(listing.status)) {
+                        countdownEl.innerHTML = `<div class="countdown-overlay countdown-ended">Auction Ended</div>`;
                     }
                 }
 
@@ -190,12 +198,9 @@
                 } else {
                     document.getElementById("auction-section").style.display = "none";
                     document.getElementById("fixed-section").style.display = "block";
-                    // Hide offer form if listing is not active
-                    if (listing.status === "ACTIVE") {
-                        loadOfferStatus();
-                    } else {
-                        document.getElementById("offer-form-section").style.display = "none";
-                    }
+                    document.getElementById("offer-form-section").style.display =
+                        listing.status === "ACTIVE" ? "" : "none";
+                    loadOfferStatus();
                 }
 
                 // Show content
@@ -214,7 +219,13 @@
                 const bids = (result.bids || []).sort((a, b) => b.amount - a.amount);
 
                 if (bids.length === 0) {
-                    document.getElementById("bids-empty").style.display = "block";
+                    const emptyEl = document.getElementById("bids-empty");
+                    const isEnded = ["CLOSED_PENDING_PAYMENT", "SOLD", "FAILED_NO_ELIGIBLE_BIDDER"].includes(currentListing.status);
+                    const isScheduled = currentListing.status === "SCHEDULED";
+                    if (isEnded) emptyEl.textContent = "No bids were placed.";
+                    else if (isScheduled) emptyEl.textContent = "Bidding hasn't started yet.";
+                    else emptyEl.textContent = "No bids yet. Be the first!";
+                    emptyEl.style.display = "block";
                     document.getElementById("bids-table-wrapper").style.display = "none";
                     currentHighestBid = null;
                     // Set hint
@@ -226,8 +237,10 @@
                 currentHighestBid = bids[0];
 
                 // Update price section
+                const isEnded = ["CLOSED_PENDING_PAYMENT", "SOLD", "FAILED_NO_ELIGIBLE_BIDDER"].includes(currentListing.status);
+                const priceLabel = isEnded ? "Highest bid" : "Current highest bid";
                 document.getElementById("listing-price").innerHTML =
-                    `<span class="price-label-detail">Current highest bid</span>
+                    `<span class="price-label-detail">${priceLabel}</span>
                      <span class="price-display">${formatPrice(currentHighestBid.amount)}</span>
                      <span class="price-start-note">Starting price: ${formatPrice(currentListing.startPrice)}</span>`;
 
@@ -265,7 +278,10 @@
                 document.getElementById("bids-table-wrapper").style.display = "block";
 
             } catch (err) {
-                document.getElementById("bids-empty").style.display = "block";
+                const emptyEl = document.getElementById("bids-empty");
+                const isEnded = ["CLOSED_PENDING_PAYMENT", "SOLD", "FAILED_NO_ELIGIBLE_BIDDER"].includes(currentListing.status);
+                emptyEl.textContent = isEnded ? "No bids were placed." : "No bids yet. Be the first!";
+                emptyEl.style.display = "block";
                 document.getElementById("bids-table-wrapper").style.display = "none";
                 currentHighestBid = null;
                 document.getElementById("bid-hint").textContent =
@@ -325,8 +341,10 @@
                 const activeOffer = offers.find(o => !["CANCELLED", "REJECTED"].includes(o.status));
 
                 if (!activeOffer) {
-                    // No active offer — show form
-                    document.getElementById("offer-form-section").style.display = "";
+                    // No active offer — show form only if listing is still active
+                    if (currentListing.status === "ACTIVE") {
+                        document.getElementById("offer-form-section").style.display = "";
+                    }
                     document.getElementById("offer-status-section").style.display = "none";
                     return;
                 }
@@ -365,8 +383,9 @@
                 document.getElementById("offer-status-content").innerHTML = content;
 
             } catch (err) {
-                // No offers endpoint or no offers — show form
-                document.getElementById("offer-form-section").style.display = "";
+                if (currentListing.status === "ACTIVE") {
+                    document.getElementById("offer-form-section").style.display = "";
+                }
                 document.getElementById("offer-status-section").style.display = "none";
             }
         }
@@ -444,7 +463,7 @@
                 const target = new Date(el.dataset.target);
                 const remaining = target - new Date();
                 if (remaining <= 0) {
-                    el.textContent = "Ended";
+                    el.textContent = el.dataset.type === "start" ? "Starting..." : "Ended";
                     if (!pendingRefresh) {
                         pendingRefresh = true;
                         setTimeout(() => {
@@ -454,8 +473,9 @@
                     }
                     return;
                 }
-                el.textContent = `Ends in ${formatCountdown(remaining)}`;
-                if (remaining < 60000) {
+                const prefix = el.dataset.type === "start" ? "Starts in" : "Ends in";
+                el.textContent = `${prefix} ${formatCountdown(remaining)}`;
+                if (el.dataset.type === "end" && remaining < 60000) {
                     el.classList.remove("countdown-active");
                     el.classList.add("countdown-ending");
                 }

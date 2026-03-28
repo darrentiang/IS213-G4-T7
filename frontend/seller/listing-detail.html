@@ -130,6 +130,7 @@
 
                 // Countdown
                 const countdownEl = document.getElementById("countdown-container");
+                countdownEl.innerHTML = "";
                 if (listing.listingType === "AUCTION" && listing.startTime && listing.endTime) {
                     const now = new Date();
                     const start = parseUtcDate(listing.startTime);
@@ -141,6 +142,10 @@
                         const remaining = end - now;
                         const cls = remaining < 60000 ? "countdown-ending" : "countdown-active";
                         countdownEl.innerHTML = `<div class="countdown-overlay ${cls}" data-target="${end.toISOString()}" data-type="end">Ends in ${formatCountdown(remaining)}</div>`;
+                    } else if (listing.status === "ACTIVE" && end <= now) {
+                        countdownEl.innerHTML = `<div class="countdown-overlay countdown-ended">Auction Ended</div>`;
+                    } else if (["CLOSED_PENDING_PAYMENT", "SOLD", "FAILED_NO_ELIGIBLE_BIDDER"].includes(listing.status)) {
+                        countdownEl.innerHTML = `<div class="countdown-overlay countdown-ended">Auction Ended</div>`;
                     }
                 }
 
@@ -195,14 +200,19 @@
                 const bids = (result.bids || []).sort((a, b) => b.amount - a.amount);
 
                 if (bids.length === 0) {
-                    document.getElementById("bids-empty").style.display = "block";
+                    const emptyEl = document.getElementById("bids-empty");
+                    const isEnded = ["CLOSED_PENDING_PAYMENT", "SOLD", "FAILED_NO_ELIGIBLE_BIDDER"].includes(currentListing.status);
+                    emptyEl.textContent = isEnded ? "No bids were placed." : "No bids have been placed yet.";
+                    emptyEl.style.display = "block";
                     return;
                 }
 
                 // Update price section if there are bids
                 const highest = bids[0];
+                const isEnded = ["CLOSED_PENDING_PAYMENT", "SOLD", "FAILED_NO_ELIGIBLE_BIDDER"].includes(currentListing.status);
+                const priceLabel = isEnded ? "Highest bid" : "Current highest bid";
                 document.getElementById("listing-price").innerHTML =
-                    `<span class="price-label-detail">Current highest bid</span>
+                    `<span class="price-label-detail">${priceLabel}</span>
                      <span class="price-display">${formatPrice(highest.amount)}</span>
                      <span class="price-start-note">Starting price: ${formatPrice(currentListing.startPrice)}</span>`;
 

@@ -162,7 +162,8 @@ function formatListingTime(listing) {
     if (listing.status === "SCHEDULED") {
         return `Starts in ${formatRelativeDuration(start - now)} · Ends in ${formatRelativeDuration(end - now)}`;
     } else if (listing.status === "ACTIVE") {
-        return `Ends in ${formatRelativeDuration(end - now)}`;
+        if (end > now) return `Ends in ${formatRelativeDuration(end - now)}`;
+        return `Ended ${formatRelativeDuration(now - end)} ago`;
     } else {
         return `Ended ${formatRelativeDuration(now - end)} ago`;
     }

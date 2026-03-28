@@ -144,6 +144,8 @@
 
                     if (listing.status === "SCHEDULED" && start > now) {
                         countdownEl.innerHTML = `<div class="countdown-overlay countdown-scheduled" data-target="${start.toISOString()}" data-type="start">Starts in ${formatCountdown(start - now)}</div>`;
+                    } else if (listing.status === "SCHEDULED" && start <= now) {
+                        countdownEl.innerHTML = `<div class="countdown-overlay countdown-scheduled">Starting soon...</div>`;
                     } else if (listing.status === "ACTIVE" && end > now) {
                         const remaining = end - now;
                         const cls = remaining < 60000 ? "countdown-ending" : "countdown-active";
@@ -206,6 +208,14 @@
                 // Show content
                 document.getElementById("loading").style.display = "none";
                 document.getElementById("detail-content").style.display = "block";
+
+                // If status is stale (should have transitioned), keep retrying
+                if (listing.listingType === "AUCTION" && listing.startTime && listing.endTime) {
+                    const now2 = new Date();
+                    const stale = (listing.status === "SCHEDULED" && parseUtcDate(listing.startTime) <= now2)
+                              || (listing.status === "ACTIVE" && parseUtcDate(listing.endTime) <= now2);
+                    if (stale) setTimeout(() => loadListing(), 5000);
+                }
 
             } catch (err) {
                 document.getElementById("loading").innerHTML =

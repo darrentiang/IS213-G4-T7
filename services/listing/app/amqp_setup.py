@@ -12,39 +12,10 @@ def setup(channel):
         durable=True
     )
 
-    # market.timers.start: holds auction.start messages until TTL expires,
-    # then dead-letters to market.dlq.start (consumed by Listing)
-    channel.queue_declare(
-        queue="market.timers.start",
-        durable=True,
-        arguments={
-            "x-dead-letter-exchange": "",
-            "x-dead-letter-routing-key": "market.dlq.start"
-        }
-    )
-
-    # market.dlq.start: receives expired auction.start messages
-    channel.queue_declare(
-        queue="market.dlq.start",
-        durable=True
-    )
-
-    # market.timers.close: holds auction.close messages until TTL expires,
-    # then dead-letters to market.dlq.close (consumed by Close Auction)
-    channel.queue_declare(
-        queue="market.timers.close",
-        durable=True,
-        arguments={
-            "x-dead-letter-exchange": "",
-            "x-dead-letter-routing-key": "market.dlq.close"
-        }
-    )
-
-    # market.dlq.close: receives expired auction.close messages
-    channel.queue_declare(
-        queue="market.dlq.close",
-        durable=True
-    )
+    # DLQ queues for timer expiry (unique per-listing timer queues are
+    # created dynamically at publish time — see routes.py and consumer.py)
+    channel.queue_declare(queue="market.dlq.start", durable=True)
+    channel.queue_declare(queue="market.dlq.close", durable=True)
 
     # listing.sold queue: listens for payment.success to mark listing SOLD
     channel.queue_declare(queue="listing.sold", durable=True)

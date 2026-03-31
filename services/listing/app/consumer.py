@@ -2,7 +2,7 @@
 DLQ Consumer for the Listing service (runs as background thread).
 Listens on market.dlq.start for auction.start messages (Timer 1).
 When Timer 1 fires: set listing ACTIVE, publish listing.active,
-and set Timer 2 (auction.close) to market.timers.close.
+and set Timer 2 (auction.close) via a unique per-listing queue.
 """
 
 import json
@@ -58,18 +58,26 @@ def handle_auction_start(channel, method, properties, body):
                 "sellerId": listing.seller_id
             })
 
-            # set Timer 2: auction.close with TTL until end_time
+            # set Timer 2: unique queue per listing for precise expiry
             ttl_ms = max(int((listing.end_time - datetime.now()).total_seconds() * 1000), 0)
 
-            publish_message(
-                channel, "", "market.timers.close",
-                {"listingId": listing.listing_id, "type": "auction.close"},
-                properties=pika.BasicProperties(
-                    delivery_mode=2,
-                    expiration=str(ttl_ms)
-                )
+            timer_queue = f"market.timer.{listing.listing_id}.close"
+            channel.queue_declare(
+                queue=timer_queue,
+                durable=True,
+                arguments={
+                    "x-message-ttl": ttl_ms,
+                    "x-dead-letter-exchange": "",
+                    "x-dead-letter-routing-key": "market.dlq.close",
+                    "x-expires": ttl_ms + 30000,
+                }
             )
-            print(f"Timer 2 set: auction.close for listing {listing_id} in {ttl_ms}ms")
+            publish_message(
+                channel, "", timer_queue,
+                {"listingId": listing.listing_id, "type": "auction.close"},
+                properties=pika.BasicProperties(delivery_mode=2)
+            )
+            print(f"Timer 2 set: auction.close for listing {listing_id} in {ttl_ms}ms (queue: {timer_queue})")
 
     else:
         print(f"Unknown message type in DLQ: {msg_type}, skipping")

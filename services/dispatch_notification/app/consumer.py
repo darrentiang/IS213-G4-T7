@@ -205,6 +205,69 @@ def handle_auction_no_eligible_bidders(channel, method, properties, body):
         _retry_or_discard(channel, method, body, "auction.no_eligible_bidders")
 
 
+def handle_payment_event(channel, method, properties, body):
+    """
+    US3 D3 steps 7a/7b: payment.success or payment.failed.
+    Fetch buyer + seller emails, send notification to both.
+    """
+    routing_key = method.routing_key
+    print(f"[{routing_key}] Received: {body}")
+    message = json.loads(body)
+
+    listing_id = message.get("listingId")
+    buyer_id = message.get("buyerId")
+
+    # get seller_id from listing
+    try:
+        listing_resp = requests.get(f"{LISTING_SERVICE_URL}/listings/{listing_id}")
+        listing_resp.raise_for_status()
+        seller_id = listing_resp.json().get("data", {}).get("sellerId")
+    except Exception as e:
+        print(f"[{routing_key}] Failed to get listing {listing_id}: {e}")
+        channel.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
+        return
+
+    # fetch both buyer and seller emails
+    emails = {}
+    for role, uid in [("buyer", buyer_id), ("seller", seller_id)]:
+        try:
+            resp = requests.get(f"{USER_SERVICE_URL}/users/{uid}")
+            resp.raise_for_status()
+            emails[role] = resp.json().get("data", {}).get("email")
+        except Exception as e:
+            print(f"[{routing_key}] Failed to get {role} (user {uid}): {e}")
+
+    if not emails:
+        print(f"[{routing_key}] No emails found. Skipping.")
+        channel.basic_ack(delivery_tag=method.delivery_tag)
+        return
+
+    # build email content based on success or failure
+    if routing_key == "payment.success":
+        amount = message.get("amount", 0)
+        subject = "Payment confirmed!"
+        body_text = f"Payment of ${amount:.2f} for listing #{listing_id} was successful. Transaction complete!"
+    else:
+        subject = "Payment failed"
+        body_text = f"Payment for listing #{listing_id} has failed. Please contact support if you believe this is an error."
+
+    # send to each recipient
+    for role, email in emails.items():
+        if not email:
+            continue
+        try:
+            notif_resp = requests.post(
+                f"{NOTIFICATION_SERVICE_URL}/notifications",
+                json={"recipientEmail": email, "subject": subject, "body": body_text}
+            )
+            notif_resp.raise_for_status()
+            print(f"[{routing_key}] Notification sent to {role} ({email})")
+        except Exception as e:
+            print(f"[{routing_key}] Failed to send notification to {role} ({email}): {e}")
+
+    channel.basic_ack(delivery_tag=method.delivery_tag)
+
+
 def start():
     """
     Connect to RabbitMQ, declare queues, and start consuming.
@@ -230,6 +293,12 @@ def start():
             channel.basic_consume(
                 queue="notif.auction",
                 on_message_callback=handle_auction_no_eligible_bidders,
+                auto_ack=False
+            )
+
+            channel.basic_consume(
+                queue="notif.payment",
+                on_message_callback=handle_payment_event,
                 auto_ack=False
             )
 

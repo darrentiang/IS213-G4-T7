@@ -83,6 +83,30 @@ def handle_auction_start(channel, method, properties, body):
         print(f"Unknown message type in DLQ: {msg_type}, skipping")
 
 
+def handle_payment_success(channel, method, properties, body):
+    """Called when payment.success lands in listing.sold queue. Marks listing SOLD."""
+    message = json.loads(body)
+    print(f"Received payment.success: {message}")
+
+    listing_id = message.get("listingId")
+    if not listing_id:
+        print("Missing listingId in payment.success, skipping")
+        return
+
+    with _flask_app.app_context():
+        listing = db.session.scalar(
+            db.select(Listing).filter_by(listing_id=listing_id)
+        )
+
+        if not listing:
+            print(f"Listing {listing_id} not found, skipping")
+            return
+
+        listing.status = 'SOLD'
+        db.session.commit()
+        print(f"Listing {listing_id} marked SOLD")
+
+
 def _consume():
     """Background thread: connect to RabbitMQ and consume from market.dlq.
     Auto-reconnects if the connection drops (heartbeat timeout, broker restart, etc.)."""
@@ -91,10 +115,15 @@ def _consume():
             connection, channel = connect(amqp_host, amqp_port)
             amqp_setup.setup(channel)
 
-            print("Consuming from market.dlq.start...")
+            print("Consuming from market.dlq.start + listing.sold...")
             channel.basic_consume(
                 queue="market.dlq.start",
                 on_message_callback=handle_auction_start,
+                auto_ack=True
+            )
+            channel.basic_consume(
+                queue="listing.sold",
+                on_message_callback=handle_payment_success,
                 auto_ack=True
             )
             channel.start_consuming()

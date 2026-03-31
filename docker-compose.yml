@@ -197,6 +197,7 @@ services:
   # User Service: Flask (port 5004)
   ####################################
   user:
+    image: jiaying0811/bidboard-user
     build:
       context: ./services/user
       dockerfile: Dockerfile
@@ -216,6 +217,7 @@ services:
   # Listing Service: Flask (port 5001)
   ####################################
   listing:
+    image: jiaying0811/bidboard-listing
     build:
       context: ./services/listing
       dockerfile: Dockerfile
@@ -240,6 +242,7 @@ services:
   # Bid Service: Flask (port 5002)
   ####################################
   bid:
+    image: jiaying0811/bidboard-bid
     build:
       context: ./services/bid
       dockerfile: Dockerfile
@@ -263,6 +266,7 @@ services:
   # Dispatch Notification: composite (no port, consumer only)
   ####################################
   dispatch-notification:
+    image: jiaying0811/bidboard-dispatch-notification
     build:
       context: ./services/dispatch_notification
       dockerfile: Dockerfile
@@ -289,6 +293,7 @@ services:
   # Close Auction: composite (consumer only)
   ####################################
   close-auction:
+    image: jiaying0811/bidboard-close-auction
     build:
       context: ./services/close_auction
       dockerfile: Dockerfile
@@ -320,6 +325,7 @@ services:
   # Offer Service: Flask (port 5003)
   ####################################
   offer:
+    image: jiaying0811/bidboard-offer
     build:
       context: ./services/offer
       dockerfile: Dockerfile
@@ -339,6 +345,7 @@ services:
   # Payment Service: Flask (port 5005)
   ####################################
   payment:
+    image: jiaying0811/bidboard-payment
     build:
       context: ./services/payment
       dockerfile: Dockerfile

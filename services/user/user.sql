@@ -11,6 +11,6 @@ CREATE TABLE users (
 );
 
 INSERT INTO users (email, name, stripe_id) VALUES
-    ('alice@example.com', 'Alice Tan', 'cus_test_alice001'),
-    ('bob@example.com', 'Bob Lim', 'cus_test_bob002'),
-    ('charlie@example.com', 'Charlie Ng', 'cus_test_charlie003');
+    ('tiangdarren@gmail.com', 'Alice Tan', 'cus_test_alice001'),
+    ('darrentiang0@gmail.com', 'Bob Lim', 'cus_UFTMQiGA5lpook'),
+    ('darrentiang1@gmail.com', 'Charlie Ng', 'cus_UFTPSV7hB0vszX');

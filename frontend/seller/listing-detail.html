@@ -219,12 +219,20 @@
 
                 // Update price section if there are bids
                 const highest = bids[0];
+                const isSold = currentListing.status === "SOLD" && currentListing.winningPrice;
                 const isEnded = ["CLOSED_PENDING_PAYMENT", "SOLD", "FAILED_NO_ELIGIBLE_BIDDER"].includes(currentListing.status);
-                const priceLabel = isEnded ? "Highest bid" : "Current highest bid";
-                document.getElementById("listing-price").innerHTML =
-                    `<span class="price-label-detail">${priceLabel}</span>
-                     <span class="price-display">${formatPrice(highest.amount)}</span>
-                     <span class="price-start-note">Starting price: ${formatPrice(currentListing.startPrice)}</span>`;
+                if (isSold) {
+                    document.getElementById("listing-price").innerHTML =
+                        `<span class="price-label-detail">Sold for</span>
+                         <span class="price-display-sold">${formatPrice(currentListing.winningPrice)}</span>
+                         <span class="price-start-note">Starting price: ${formatPrice(currentListing.startPrice)}</span>`;
+                } else {
+                    const priceLabel = isEnded ? "Highest bid" : "Current highest bid";
+                    document.getElementById("listing-price").innerHTML =
+                        `<span class="price-label-detail">${priceLabel}</span>
+                         <span class="price-display">${formatPrice(highest.amount)}</span>
+                         <span class="price-start-note">Starting price: ${formatPrice(currentListing.startPrice)}</span>`;
+                }
 
                 // Fetch buyer names in parallel
                 const buyerIds = [...new Set(bids.map(b => b.buyerId))];
@@ -239,13 +247,17 @@
                 }));
 
                 // Render table
+                const winnerId = currentListing.winningBuyerId;
+                const winnerPrice = currentListing.winningPrice;
                 const tbody = document.getElementById("bids-body");
                 tbody.innerHTML = bids.map((bid, i) => {
-                    const isHighest = i === 0;
-                    const rowClass = isHighest ? "bid-row-highest" : "";
+                    const isWinner = currentListing.status === "SOLD" && bid.buyerId === winnerId && bid.amount === winnerPrice;
+                    const isHighest = i === 0 && currentListing.status !== "SOLD";
+                    const rowClass = isWinner ? "bid-row-highest" : isHighest ? "bid-row-highest" : "";
+                    const badge = isWinner ? ' <span class="badge bg-success badge-winner">Winner</span>' : "";
                     return `<tr class="${rowClass}">
                         <td>${i + 1}</td>
-                        <td>${buyerNames[bid.buyerId] || `User #${bid.buyerId}`}</td>
+                        <td>${buyerNames[bid.buyerId] || `User #${bid.buyerId}`}${badge}</td>
                         <td class="fw-medium">${formatPrice(bid.amount)}</td>
                         <td>${formatDateTime(bid.createdAt)}</td>
                     </tr>`;

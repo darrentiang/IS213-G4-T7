@@ -1,0 +1,35 @@
+services:
+  user:
+    build:
+      context: ./services/user
+      dockerfile: Dockerfile
+
+  listing:
+    build:
+      context: ./services/listing
+      dockerfile: Dockerfile
+
+  bid:
+    build:
+      context: ./services/bid
+      dockerfile: Dockerfile
+
+  offer:
+    build:
+      context: ./services/offer
+      dockerfile: Dockerfile
+
+  payment:
+    build:
+      context: ./services/payment
+      dockerfile: Dockerfile
+
+  dispatch-notification:
+    build:
+      context: ./services/dispatch_notification
+      dockerfile: Dockerfile
+
+  close-auction:
+    build:
+      context: ./services/close_auction
+      dockerfile: Dockerfile

@@ -1,0 +1,114 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      user: ${{ steps.changes.outputs.user }}
+      listing: ${{ steps.changes.outputs.listing }}
+      bid: ${{ steps.changes.outputs.bid }}
+      offer: ${{ steps.changes.outputs.offer }}
+      payment: ${{ steps.changes.outputs.payment }}
+      dispatch_notification: ${{ steps.changes.outputs.dispatch_notification }}
+      close_auction: ${{ steps.changes.outputs.close_auction }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            user:
+              - 'services/user/**'
+            listing:
+              - 'services/listing/**'
+            bid:
+              - 'services/bid/**'
+            offer:
+              - 'services/offer/**'
+            payment:
+              - 'services/payment/**'
+            dispatch_notification:
+              - 'services/dispatch_notification/**'
+            close_auction:
+              - 'services/close_auction/**'
+
+  build-push:
+    needs: detect-changes
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - service: user
+            context: ./services/user
+            image: jiaying0811/bidboard-user
+            changed: ${{ needs.detect-changes.outputs.user }}
+          - service: listing
+            context: ./services/listing
+            image: jiaying0811/bidboard-listing
+            changed: ${{ needs.detect-changes.outputs.listing }}
+          - service: bid
+            context: ./services/bid
+            image: jiaying0811/bidboard-bid
+            changed: ${{ needs.detect-changes.outputs.bid }}
+          - service: offer
+            context: ./services/offer
+            image: jiaying0811/bidboard-offer
+            changed: ${{ needs.detect-changes.outputs.offer }}
+          - service: payment
+            context: ./services/payment
+            image: jiaying0811/bidboard-payment
+            changed: ${{ needs.detect-changes.outputs.payment }}
+          - service: dispatch-notification
+            context: ./services/dispatch_notification
+            image: jiaying0811/bidboard-dispatch-notification
+            changed: ${{ needs.detect-changes.outputs.dispatch_notification }}
+          - service: close-auction
+            context: ./services/close_auction
+            image: jiaying0811/bidboard-close-auction
+            changed: ${{ needs.detect-changes.outputs.close_auction }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        if: matrix.changed == 'true'
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        if: matrix.changed == 'true'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push ${{ matrix.service }}
+        if: matrix.changed == 'true'
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.context }}
+          platforms: linux/amd64
+          push: true
+          tags: ${{ matrix.image }}:latest
+
+  deploy:
+    needs: build-push
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to VM
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          script: |
+            cd ~/IS213-G4-T7
+            git pull origin main
+            docker compose pull
+            docker compose up -d

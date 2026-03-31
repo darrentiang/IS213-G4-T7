@@ -198,9 +198,6 @@ services:
   ####################################
   user:
     image: jiaying0811/bidboard-user
-    build:
-      context: ./services/user
-      dockerfile: Dockerfile
     container_name: user
     restart: always
     ports:
@@ -218,9 +215,6 @@ services:
   ####################################
   listing:
     image: jiaying0811/bidboard-listing
-    build:
-      context: ./services/listing
-      dockerfile: Dockerfile
     container_name: listing
     restart: always
     ports:
@@ -243,9 +237,6 @@ services:
   ####################################
   bid:
     image: jiaying0811/bidboard-bid
-    build:
-      context: ./services/bid
-      dockerfile: Dockerfile
     container_name: bid
     restart: always
     ports:
@@ -267,9 +258,6 @@ services:
   ####################################
   dispatch-notification:
     image: jiaying0811/bidboard-dispatch-notification
-    build:
-      context: ./services/dispatch_notification
-      dockerfile: Dockerfile
     container_name: dispatch-notification
     restart: always
     environment:
@@ -294,9 +282,6 @@ services:
   ####################################
   close-auction:
     image: jiaying0811/bidboard-close-auction
-    build:
-      context: ./services/close_auction
-      dockerfile: Dockerfile
     container_name: close-auction
     restart: always
     environment:
@@ -326,9 +311,6 @@ services:
   ####################################
   offer:
     image: jiaying0811/bidboard-offer
-    build:
-      context: ./services/offer
-      dockerfile: Dockerfile
     container_name: offer
     restart: always
     ports:
@@ -346,9 +328,6 @@ services:
   ####################################
   payment:
     image: jiaying0811/bidboard-payment
-    build:
-      context: ./services/payment
-      dockerfile: Dockerfile
     container_name: payment
     restart: always
     ports:

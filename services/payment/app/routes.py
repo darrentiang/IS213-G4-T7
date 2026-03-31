@@ -128,8 +128,12 @@ def charge_payment():
                 "data": payment_record.json()
             }), 200
 
-        except stripe.error.CardError as e :
+        except (stripe.error.CardError,
+                stripe.error.InvalidRequestError,
+                stripe.error.AuthenticationError) as e:
         # failed - save status as failed in db
+            error_msg = getattr(e, "user_message", None) or str(e)
+
             payment_record = Payment(
             listing_id      = listing_id,
             buyer_id        = buyer_id,
@@ -154,7 +158,7 @@ def charge_payment():
             return jsonify({
                 "code": 200,
                 "status": "FAILED",
-                "message": e.user_message or str(e),
+                "message": error_msg,
                 "data": payment_record.json()
             }), 200
 

@@ -163,9 +163,10 @@ def charge_payment():
             }), 200
 
     except Exception as e:
+        print(f"Payment 500 error: {e}")
         return jsonify(
                 {
                     "code": 500,
-                    "message": "An error occurred prcessing payment." + str(e)
+                    "message": "An error occurred processing payment. " + str(e)
                 }
-            ),500
+            ), 500

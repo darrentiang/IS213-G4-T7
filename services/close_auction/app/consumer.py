@@ -99,7 +99,7 @@ def handle_auction_close(channel, method, properties, body):
                     "amount": amount,
                     "stripeId": stripe_id,
                     "listingType": "AUCTION",
-                    "idempotencyKey": f"auction_{listing_id}_{buyer_id}"
+                    "idempotencyKey": f"auction_{listing_id}_{buyer_id}_{listing_data.get('createdAt', '')}"
                 }
             )
             resp.raise_for_status()

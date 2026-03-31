@@ -3,12 +3,24 @@
 from os import environ
 from app.db import db
 from app.models import Payment
+from app.amqp_lib import connect, close, publish_message
 from flask import Blueprint, jsonify, request
 import stripe
 
 stripe.api_key = environ.get("STRIPE_SECRET_KEY")
 
 payment_bp = Blueprint('payment',__name__)
+
+
+def _amqp_publish(publish_fn):
+    """Open a fresh AMQP connection, run publish_fn(channel), then close."""
+    amqp_host = environ.get("RABBITMQ_HOST") or "localhost"
+    amqp_port = int(environ.get("RABBITMQ_PORT") or 5672)
+    connection, channel = connect(amqp_host, amqp_port)
+    try:
+        publish_fn(channel)
+    finally:
+        close(connection, channel)
 
 @payment_bp.route("/payments/charge",methods=["POST"])
 def charge_payment():
@@ -97,7 +109,19 @@ def charge_payment():
             )
             db.session.add(payment_record)
             db.session.commit()
- 
+
+            # Publish payment.success to market.events
+            try:
+                _amqp_publish(lambda ch: publish_message(ch, "market.events", "payment.success", {
+                    "listingId": listing_id,
+                    "buyerId": buyer_id,
+                    "amount": float(amount),
+                    "listingType": listing_type,
+                    "offerId": data.get("offerId")
+                }))
+            except Exception as amqp_err:
+                print(f"Failed to publish payment.success: {amqp_err}")
+
             return jsonify({
                 "code": 200,
                 "message": "Payment has been made successfully.",
@@ -115,6 +139,17 @@ def charge_payment():
             )
             db.session.add(payment_record)
             db.session.commit()
+
+            # Publish payment.failed to market.events
+            try:
+                _amqp_publish(lambda ch: publish_message(ch, "market.events", "payment.failed", {
+                    "listingId": listing_id,
+                    "buyerId": buyer_id,
+                    "listingType": listing_type,
+                    "offerId": data.get("offerId")
+                }))
+            except Exception as amqp_err:
+                print(f"Failed to publish payment.failed: {amqp_err}")
 
             return jsonify({
                 "code": 200,

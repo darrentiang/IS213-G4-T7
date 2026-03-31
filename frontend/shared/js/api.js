@@ -10,6 +10,15 @@ async function apiFetch(url, options = {}) {
     const res = await fetch(url, { ...defaults, ...options });
     const json = await res.json();
 
+    // Handle Kong gateway errors (429 rate limit, 502 bad gateway, etc.)
+    // Kong responses don't use the {code, data} envelope our services use
+    if (res.status === 429) {
+        throw new Error("Too many requests. Please slow down and try again.");
+    }
+    if (!res.ok && json.code === undefined) {
+        throw new Error(json.message || `Request failed (${res.status})`);
+    }
+
     if (json.code >= 400) {
         throw new Error(json.message || "An error occurred.");
     }

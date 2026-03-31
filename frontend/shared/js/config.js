@@ -1,9 +1,11 @@
+const GATEWAY_URL = `http://${window.location.hostname}:8000`;
+
 const CONFIG = {
-    LISTING_API: "http://localhost:5001",
-    BID_API: "http://localhost:5002",
-    OFFER_API: "http://localhost:5003",
-    USER_API: "http://localhost:5004",
-    PAYMENT_API: "http://localhost:5005",
+    LISTING_API: GATEWAY_URL,
+    BID_API: GATEWAY_URL,
+    OFFER_API: GATEWAY_URL,
+    USER_API: GATEWAY_URL,
+    PAYMENT_API: GATEWAY_URL,
 
     // Hardcoded user IDs — actual names/emails fetched from User Service
     SELLER_ID: 1,

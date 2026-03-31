@@ -1,13 +1,14 @@
 # defines the API endpoints (HTTP routes)
 
+from os import environ
 from app.db import db
 from app.models import Payment
 from flask import Blueprint, jsonify, request
 import stripe
 
+stripe.api_key = environ.get("STRIPE_SECRET_KEY")
 
 payment_bp = Blueprint('payment',__name__)
-#need set stripe.api_key in env file
 
 @payment_bp.route("/payments/charge",methods=["POST"])
 def charge_payment():

@@ -254,7 +254,7 @@
                 if (isSold) {
                     document.getElementById("listing-price").innerHTML =
                         `<span class="price-label-detail">Sold for</span>
-                         <span class="price-display">${formatPrice(currentListing.winningPrice)}</span>
+                         <span class="price-display-sold">${formatPrice(currentListing.winningPrice)}</span>
                          <span class="price-start-note">Starting price: ${formatPrice(currentListing.startPrice)}</span>`;
                 } else {
                     const priceLabel = isEnded ? "Highest bid" : "Current highest bid";
@@ -288,7 +288,7 @@
                     const isWinner = currentListing.status === "SOLD" && bid.buyerId === winnerId && bid.amount === winnerPrice;
                     const isHighest = i === 0 && currentListing.status !== "SOLD";
                     const rowClass = isWinner ? "bid-row-highest" : isHighest ? "bid-row-highest" : "";
-                    const badge = isWinner ? ' <span class="badge bg-success">Winner</span>' : "";
+                    const badge = isWinner ? ' <span class="badge bg-success badge-winner">Winner</span>' : "";
                     return `<tr class="${rowClass}">
                         <td>${i + 1}</td>
                         <td>${buyerNames[bid.buyerId] || `User #${bid.buyerId}`}${badge}</td>

@@ -156,9 +156,9 @@
                             ${countdownHtml}
                         </div>
                         <div class="card-body">
-                            <div class="d-flex gap-2 mb-2">${typeBadge} ${statusBadge}</div>
+                            <div class="d-flex justify-content-between mb-2">${typeBadge} ${statusBadge}</div>
                             <h5 class="card-title">${listing.title}</h5>
-                            <p class="card-text price-tag">${priceLabel}</p>
+                            <p class="card-text price-tag${listing.status === 'SOLD' ? ' price-sold' : ''}">${priceLabel}</p>
                         </div>
                     </div>
                 </div>

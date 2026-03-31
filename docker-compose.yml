@@ -355,7 +355,7 @@ services:
     container_name: frontend
     restart: always
     ports:
-      - "8080:80"
+      - "80:80"
     volumes:
       - ./frontend/shared:/usr/share/nginx/html/shared
       - ./frontend/seller:/usr/share/nginx/html/seller

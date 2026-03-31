@@ -166,6 +166,45 @@ def handle_listing_event(channel, method, properties, body):
         _retry_or_discard(channel, method, body, routing_key)
 
 
+def handle_auction_no_eligible_bidders(channel, method, properties, body):
+    """US2 D2 Steps 11-13: Notify seller that no bidders could pay."""
+    print(f"[auction.no_eligible_bidders] Received: {body}")
+    message = json.loads(body)
+
+    seller_id = message.get("sellerId")
+    listing_id = message.get("listingId")
+
+    try:
+        user_response = requests.get(f"{USER_SERVICE_URL}/users/{seller_id}")
+        user_response.raise_for_status()
+        email = user_response.json().get("data", {}).get("email")
+    except Exception as e:
+        print(f"[auction.no_eligible_bidders] Failed to get user {seller_id}: {e}")
+        channel.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
+        return
+
+    if not email:
+        print(f"[auction.no_eligible_bidders] No email for user {seller_id}. Skipping.")
+        channel.basic_ack(delivery_tag=method.delivery_tag)
+        return
+
+    try:
+        notif_response = requests.post(
+            f"{NOTIFICATION_SERVICE_URL}/notifications",
+            json={
+                "recipientEmail": email,
+                "subject": "Auction ended — no eligible bidders",
+                "body": f"Your auction (listing #{listing_id}) has ended, but no bidders could complete payment. The listing has been marked as unsold."
+            }
+        )
+        notif_response.raise_for_status()
+        print(f"[auction.no_eligible_bidders] Notification sent to {email}")
+        channel.basic_ack(delivery_tag=method.delivery_tag)
+    except Exception as e:
+        print(f"[auction.no_eligible_bidders] Failed to send notification: {e}")
+        _retry_or_discard(channel, method, body, "auction.no_eligible_bidders")
+
+
 def start():
     """
     Connect to RabbitMQ, declare queues, and start consuming.
@@ -185,6 +224,12 @@ def start():
             channel.basic_consume(
                 queue="notif.listing",
                 on_message_callback=handle_listing_event,
+                auto_ack=False
+            )
+
+            channel.basic_consume(
+                queue="notif.auction",
+                on_message_callback=handle_auction_no_eligible_bidders,
                 auto_ack=False
             )
 

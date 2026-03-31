@@ -1,35 +1,394 @@
+volumes:
+  rabbitmq_data:
+    name: bidboard_rabbitmq_data
+  user_db_data:
+    name: bidboard_user_db_data
+  bid_db_data:
+    name: bidboard_bid_db_data
+  listing_db_data:
+    name: bidboard_listing_db_data
+  offer_db_data:
+    name: bidboard_offer_db_data
+  payment_db_data:
+    name: bidboard_payment_db_data
+  pgdata:
+    name: bidboard_pgdata
+
+networks:
+  bidboard-net:
+    driver: bridge
+    name: bidboard-net
+
 services:
+  #######################################
+  # Postgres: Kong's database
+  #######################################
+  kong-database:
+    image: postgres:17.4
+    restart: always
+    networks: 
+      - bidboard-net
+    environment:
+      POSTGRES_DB: kong
+      POSTGRES_USER: kong
+      POSTGRES_PASSWORD: password
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "kong"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  #######################################
+  # Kong: DB migration (runs once)
+  #######################################
+  kong-migration:
+    image: kong/kong-gateway:3.9
+    command: "kong migrations bootstrap"
+    restart: on-failure
+    networks:
+      - bidboard-net
+    environment:
+      KONG_DATABASE: postgres
+      KONG_PG_HOST: kong-database
+      KONG_PG_USER: kong
+      KONG_PG_PASSWORD: password
+    depends_on:
+      - kong-database
+
+  #######################################
+  # Kong: The API Gateway
+  #######################################
+  kong:
+    image: kong/kong-gateway:3.9
+    restart: always
+    networks:
+      - bidboard-net
+    environment:
+      KONG_DATABASE: postgres
+      KONG_PG_HOST: kong-database
+      KONG_PG_USER: kong
+      KONG_PG_PASSWORD: password
+      KONG_PROXY_ACCESS_LOG: /dev/stdout
+      KONG_ADMIN_ACCESS_LOG: /dev/stdout
+      KONG_PROXY_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_LISTEN: 0.0.0.0:8001
+      KONG_ADMIN_GUI_URL: ${KONG_MANAGER_URL:-http://localhost:8002}
+    depends_on:
+      - kong-migration
+    ports:
+      - "8000:8000"   # Proxy — frontend calls this
+      - "8001:8001"   # Admin API
+      - "8002:8002"   # Kong Manager GUI
+
+  ####################################
+  # MySQL: user_db
+  ####################################
+  user-db:
+    image: mysql:8.0
+    container_name: user-db
+    restart: always
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      - user_db_data:/var/lib/mysql
+      - ./services/user/user.sql:/docker-entrypoint-initdb.d/user.sql
+    networks:
+      - bidboard-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ####################################
+  # MySQL: bid_db
+  ####################################
+  bid-db:
+    image: mysql:8.0
+    container_name: bid-db
+    restart: always
+    ports:
+      - "3308:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      - bid_db_data:/var/lib/mysql
+      - ./services/bid/bid.sql:/docker-entrypoint-initdb.d/bid.sql
+    networks:
+      - bidboard-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ####################################
+  # MySQL: listing_db
+  ####################################
+  listing-db:
+    image: mysql:8.0
+    container_name: listing-db
+    restart: always
+    ports:
+      - "3309:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      - listing_db_data:/var/lib/mysql
+      - ./services/listing/listing.sql:/docker-entrypoint-initdb.d/listing.sql
+    networks:
+      - bidboard-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    
+  ####################################
+  # MySQL: offer_db
+  ####################################
+  offer-db:
+    image: mysql:8.0
+    container_name: offer-db
+    restart: always
+    ports:
+      - "3310:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      - offer_db_data:/var/lib/mysql
+      - ./services/offer/offer.sql:/docker-entrypoint-initdb.d/offer.sql
+    networks:
+      - bidboard-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ####################################
+  # MySQL: payment_db
+  ####################################
+  payment-db:
+    image: mysql:8.0
+    container_name: payment-db
+    restart: always
+    ports:
+      - "3311:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      - payment_db_data:/var/lib/mysql
+      - ./services/payment/payment.sql:/docker-entrypoint-initdb.d/payment.sql
+    networks:
+      - bidboard-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ####################################
+  # User Service: Flask (port 5004)
+  ####################################
   user:
     build:
       context: ./services/user
       dockerfile: Dockerfile
+    container_name: user
+    restart: always
+    ports:
+      - "5004:5004"
+    environment:
+      - dbURL=mysql+mysqlconnector://root:root@user-db:3306/user_db
+    depends_on:
+      user-db:
+        condition: service_healthy
+    networks:
+      - bidboard-net
 
+  ####################################
+  # Listing Service: Flask (port 5001)
+  ####################################
   listing:
     build:
       context: ./services/listing
       dockerfile: Dockerfile
+    container_name: listing
+    restart: always
+    ports:
+      - "5001:5001"
+    environment:
+      - dbURL=mysql+mysqlconnector://root:root@listing-db:3306/listing_db
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      listing-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+    networks:
+      - bidboard-net
 
+  ####################################
+  # Bid Service: Flask (port 5002)
+  ####################################
   bid:
     build:
       context: ./services/bid
       dockerfile: Dockerfile
+    container_name: bid
+    restart: always
+    ports:
+      - "5002:5002"
+    environment:
+      - dbURL=mysql+mysqlconnector://root:root@bid-db:3306/bid_db
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+    depends_on:
+      bid-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+    networks:
+      - bidboard-net
 
-  offer:
-    build:
-      context: ./services/offer
-      dockerfile: Dockerfile
-
-  payment:
-    build:
-      context: ./services/payment
-      dockerfile: Dockerfile
-
+  ####################################
+  # Dispatch Notification: composite (no port, consumer only)
+  ####################################
   dispatch-notification:
     build:
       context: ./services/dispatch_notification
       dockerfile: Dockerfile
+    container_name: dispatch-notification
+    restart: always
+    environment:
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - USER_SERVICE_URL=http://user:5004
+      - LISTING_SERVICE_URL=http://listing:5001
+      - NOTIFICATION_SERVICE_URL=http://notification:5006
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      rabbitmq:
+        condition: service_started
+      user:
+        condition: service_started
+      listing:
+        condition: service_started
+    networks:
+      - bidboard-net
 
+  ####################################
+  # Close Auction: composite (consumer only)
+  ####################################
   close-auction:
     build:
       context: ./services/close_auction
       dockerfile: Dockerfile
+    container_name: close-auction
+    restart: always
+    environment:
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - LISTING_SERVICE_URL=http://listing:5001
+      - BID_SERVICE_URL=http://bid:5002
+      - USER_SERVICE_URL=http://user:5004
+      - PAYMENT_SERVICE_URL=http://payment:5005
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      rabbitmq:
+        condition: service_started
+      listing:
+        condition: service_started
+      bid:
+        condition: service_started
+      user:
+        condition: service_started
+      payment:
+        condition: service_started
+    networks:
+      - bidboard-net
+
+  ####################################
+  # Offer Service: Flask (port 5003)
+  ####################################
+  offer:
+    build:
+      context: ./services/offer
+      dockerfile: Dockerfile
+    container_name: offer
+    restart: always
+    ports:
+      - "5003:5003"
+    environment:
+      - dbURL=mysql+mysqlconnector://root:root@offer-db:3306/offer_db
+    depends_on:
+      offer-db:
+        condition: service_healthy
+    networks:
+      - bidboard-net
+
+  ####################################
+  # Payment Service: Flask (port 5005)
+  ####################################
+  payment:
+    build:
+      context: ./services/payment
+      dockerfile: Dockerfile
+    container_name: payment
+    restart: always
+    ports:
+      - "5005:5005"
+    environment:
+      - dbURL=mysql+mysqlconnector://root:root@payment-db:3306/payment_db
+      - STRIPE_SECRET_KEY=sk_test_51TCk9I2SSUGUaq1yLXmskvTU4rltiVkDrGH1R0HiW165gv03kHS3DqpJDJLwf4E6s4p5ucHn3I6cxzswSCIdVDal00dfZTn3jP
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      payment-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+    networks:
+      - bidboard-net
+
+  ####################################
+  # Frontend: Nginx (port 8080)
+  ####################################
+  frontend:
+    image: nginx:alpine
+    container_name: frontend
+    restart: always
+    ports:
+      - "8080:80"
+    volumes:
+      - ./frontend/shared:/usr/share/nginx/html/shared
+      - ./frontend/seller:/usr/share/nginx/html/seller
+      - ./frontend/buyer:/usr/share/nginx/html/buyer
+      - ./frontend/nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - bidboard-net
+
+  ####################################
+  # RabbitMQ: messaging broker
+  ####################################
+  rabbitmq:
+    image: rabbitmq:3-management
+    hostname: bidboard-rabbit
+    container_name: rabbitmq
+    restart: always
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - bidboard-net

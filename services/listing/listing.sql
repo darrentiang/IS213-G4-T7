@@ -14,6 +14,7 @@ CREATE TABLE listings (
     end_time DATETIME COMMENT 'Auction only, nullable for FIXED',
     status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE' COMMENT 'SCHEDULED, ACTIVE, CLOSED_PENDING_PAYMENT, SOLD, FAILED_NO_ELIGIBLE_BIDDER',
     winning_buyer_id INT COMMENT 'Set on auction close, nullable',
+    winning_price DECIMAL(10, 2) COMMENT 'Final sale price, nullable',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 

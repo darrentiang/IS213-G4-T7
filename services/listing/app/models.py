@@ -15,6 +15,7 @@ class Listing(db.Model):
     end_time = db.Column(db.DateTime, nullable=True)
     status = db.Column(db.String(50), nullable=False, server_default='ACTIVE')
     winning_buyer_id = db.Column(db.Integer, nullable=True)
+    winning_price = db.Column(db.Numeric(10, 2), nullable=True)
     created_at = db.Column(
         db.DateTime, nullable=False, server_default=db.func.now()
     )
@@ -45,5 +46,6 @@ class Listing(db.Model):
             "endTime": self.end_time.isoformat() if self.end_time else None,
             "status": self.status,
             "winningBuyerId": self.winning_buyer_id,
+            "winningPrice": float(self.winning_price) if self.winning_price else None,
             "createdAt": self.created_at.isoformat()
         }

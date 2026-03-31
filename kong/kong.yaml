@@ -1,15 +1,11 @@
 _format_version: "3.0"
-
 plugins:
-- name: cors
-  enabled: true
-  protocols:
-  - http
-  - https
-  config:
+- config:
     credentials: false
+    exposed_headers: null
     headers:
     - Content-Type
+    max_age: null
     methods:
     - GET
     - HEAD
@@ -18,102 +14,145 @@ plugins:
     - POST
     - DELETE
     - OPTIONS
+    - TRACE
+    - CONNECT
     origins:
     - '*'
-
-- name: rate-limiting
+    preflight_continue: false
+    private_network: false
   enabled: true
+  name: cors
   protocols:
+  - grpc
+  - grpcs
   - http
   - https
-  route: bid
-  config:
-    minute: 5
-    limit_by: ip
-    policy: local
-    fault_tolerant: true
-
 services:
-- name: user
-  host: user
-  port: 5004
-  path: /users
-  protocol: http
-  routes:
-  - name: user
-    paths:
-    - /users
-    strip_path: true
-    protocols:
-    - http
-    - https
-
-- name: listing
-  host: listing
-  port: 5001
-  path: /listings
-  protocol: http
-  routes:
-  - name: listing
-    paths:
-    - /listings
-    strip_path: true
-    protocols:
-    - http
-    - https
-
-- name: bid
+- connect_timeout: 60000
+  enabled: true
   host: bid
+  name: bid
   port: 5002
-  path: /bids
   protocol: http
+  read_timeout: 60000
+  retries: 5
   routes:
-  - name: bid
+  - https_redirect_status_code: 426
+    name: bid
+    path_handling: v0
     paths:
     - /bids
-    strip_path: true
+    preserve_host: false
     protocols:
     - http
     - https
-
-- name: ranked-bids
-  host: bid
-  port: 5002
-  path: /auctions
-  protocol: http
-  routes:
-  - name: ranked_bids
+    regex_priority: 0
+    request_buffering: true
+    response_buffering: true
+    strip_path: true
+  - https_redirect_status_code: 426
+    name: ranked_bids
+    path_handling: v0
     paths:
     - /auctions
-    strip_path: true
+    preserve_host: false
     protocols:
     - http
     - https
-
-- name: offer
-  host: offer
-  port: 5003
-  path: /offers
+    regex_priority: 0
+    request_buffering: true
+    response_buffering: true
+    strip_path: true
+  write_timeout: 60000
+- connect_timeout: 60000
+  enabled: true
+  host: listing
+  name: listing
+  port: 5001
   protocol: http
+  read_timeout: 60000
+  retries: 5
   routes:
-  - name: offer
+  - https_redirect_status_code: 426
+    name: listing
+    path_handling: v0
+    paths:
+    - /listings
+    preserve_host: false
+    protocols:
+    - http
+    - https
+    regex_priority: 0
+    request_buffering: true
+    response_buffering: true
+    strip_path: true
+  write_timeout: 60000
+- connect_timeout: 60000
+  enabled: true
+  host: offer
+  name: offer
+  port: 5003
+  protocol: http
+  read_timeout: 60000
+  retries: 5
+  routes:
+  - https_redirect_status_code: 426
+    name: offer
+    path_handling: v0
     paths:
     - /offers
-    strip_path: true
+    preserve_host: false
     protocols:
     - http
     - https
-
-- name: payment
+    regex_priority: 0
+    request_buffering: true
+    response_buffering: true
+    strip_path: true
+  write_timeout: 60000
+- connect_timeout: 60000
+  enabled: true
   host: payment
+  name: payment
   port: 5005
-  path: /payments
   protocol: http
+  read_timeout: 60000
+  retries: 5
   routes:
-  - name: payment
+  - https_redirect_status_code: 426
+    name: payment
+    path_handling: v0
     paths:
     - /payments
-    strip_path: true
+    preserve_host: false
     protocols:
     - http
     - https
+    regex_priority: 0
+    request_buffering: true
+    response_buffering: true
+    strip_path: true
+  write_timeout: 60000
+- connect_timeout: 60000
+  enabled: true
+  host: user
+  name: user
+  port: 5004
+  protocol: http
+  read_timeout: 60000
+  retries: 5
+  routes:
+  - https_redirect_status_code: 426
+    name: user
+    path_handling: v0
+    paths:
+    - /users
+    preserve_host: false
+    protocols:
+    - http
+    - https
+    regex_priority: 0
+    request_buffering: true
+    response_buffering: true
+    strip_path: true
+  write_timeout: 60000

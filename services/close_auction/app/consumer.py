@@ -112,14 +112,8 @@ def handle_auction_close(channel, method, properties, body):
         # Step 7: Check result
         if payment_status == "SUCCESS":
             print(f"[auction.close] Payment SUCCESS for user {buyer_id}")
-            # Update listing with winning buyer
-            try:
-                requests.patch(
-                    f"{LISTING_SERVICE_URL}/listings/{listing_id}/status",
-                    json={"status": "CLOSED_PENDING_PAYMENT", "winningBuyerId": buyer_id}
-                )
-            except Exception as e:
-                print(f"[auction.close] Failed to set winningBuyerId: {e}")
+            # listing.sold consumer handles marking SOLD + winningBuyerId
+            # via the payment.success AMQP event — no PATCH needed here
             payment_succeeded = True
             break
         else:

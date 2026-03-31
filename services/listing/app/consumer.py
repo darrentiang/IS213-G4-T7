@@ -103,8 +103,9 @@ def handle_payment_success(channel, method, properties, body):
             return
 
         listing.status = 'SOLD'
+        listing.winning_buyer_id = message.get("buyerId")
         db.session.commit()
-        print(f"Listing {listing_id} marked SOLD")
+        print(f"Listing {listing_id} marked SOLD (winner: {listing.winning_buyer_id})")
 
 
 def _consume():

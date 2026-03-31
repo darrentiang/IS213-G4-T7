@@ -112,4 +112,4 @@ jobs:
             git pull origin main
             docker compose pull
             docker compose up -d
-            deck gateway sync kong/kong.yaml --kong-addr http://localhost:8001
+            deck sync kong/kong.yaml --kong-addr http://localhost:8001

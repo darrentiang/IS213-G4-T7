@@ -40,6 +40,34 @@ async function loadNavbarUser(userId) {
 }
 
 /**
+ * Render a buyer switcher dropdown into #buyer-switcher.
+ * Saves selection to localStorage and reloads the page.
+ */
+function initBuyerSwitcher() {
+    const container = document.getElementById("buyer-switcher");
+    if (!container) return;
+
+    const select = document.createElement("select");
+    select.className = "form-select form-select-sm";
+    select.style.width = "160px";
+
+    CONFIG.BUYERS.forEach(b => {
+        const opt = document.createElement("option");
+        opt.value = b.id;
+        opt.textContent = b.name;
+        if (b.id === CONFIG.BUYER_ID) opt.selected = true;
+        select.appendChild(opt);
+    });
+
+    select.addEventListener("change", () => {
+        localStorage.setItem("buyerId", select.value);
+        window.location.reload();
+    });
+
+    container.appendChild(select);
+}
+
+/**
  * Get a query parameter from the current URL.
  */
 function getQueryParam(name) {

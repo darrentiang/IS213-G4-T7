@@ -5,7 +5,15 @@ const CONFIG = {
     USER_API: "http://localhost:5004",
     PAYMENT_API: "http://localhost:5005",
 
-    // Hardcoded user IDs — actual names/emails fetched from User Service
+    // Hardcoded seller ID
     SELLER_ID: 1,
-    BUYER_ID: 2,
+
+    // Buyer ID from localStorage, default to Bob (2)
+    BUYER_ID: parseInt(localStorage.getItem("buyerId")) || 2,
+
+    // Available buyer accounts for the switcher
+    BUYERS: [
+        { id: 2, name: "Bob Lim" },
+        { id: 3, name: "Charlie Ng" },
+    ],
 };

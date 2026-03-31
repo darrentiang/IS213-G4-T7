@@ -12,6 +12,7 @@
     <nav class="navbar">
         <div class="container">
             <span class="navbar-text">Buyer: <span id="navbar-user-name">Loading...</span></span>
+            <div id="buyer-switcher" class="d-flex align-items-center ms-auto"></div>
         </div>
     </nav>
 
@@ -42,6 +43,7 @@
     <script src="/shared/js/api.js"></script>
     <script>
         loadNavbarUser(CONFIG.BUYER_ID);
+        initBuyerSwitcher();
 
         let allListings = [];
         let currentFilter = "all";

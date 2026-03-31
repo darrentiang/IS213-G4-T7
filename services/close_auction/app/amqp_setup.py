@@ -11,22 +11,8 @@ def setup(channel):
         durable=True
     )
 
-    # market.timers.close: holds auction.close messages until TTL expires,
-    # then dead-letters to market.dlq.close
-    channel.queue_declare(
-        queue="market.timers.close",
-        durable=True,
-        arguments={
-            "x-dead-letter-exchange": "",
-            "x-dead-letter-routing-key": "market.dlq.close"
-        }
-    )
-
     # market.dlq.close: receives expired auction.close messages
-    # Close Auction consumes from this queue
-    channel.queue_declare(
-        queue="market.dlq.close",
-        durable=True
-    )
+    # (unique per-listing timer queues dead-letter here — see listing service)
+    channel.queue_declare(queue="market.dlq.close", durable=True)
 
     print("AMQP setup complete: close_auction queues declared")

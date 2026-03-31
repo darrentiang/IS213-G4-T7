@@ -348,9 +348,15 @@ services:
       - "5005:5005"
     environment:
       - dbURL=mysql+mysqlconnector://root:root@payment-db:3306/payment_db
+      - STRIPE_SECRET_KEY=sk_test_51TCk9I2SSUGUaq1yLXmskvTU4rltiVkDrGH1R0HiW165gv03kHS3DqpJDJLwf4E6s4p5ucHn3I6cxzswSCIdVDal00dfZTn3jP
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - PYTHONUNBUFFERED=1
     depends_on:
       payment-db:
         condition: service_healthy
+      rabbitmq:
+        condition: service_started
     networks:
       - bidboard-net
 

@@ -24,4 +24,22 @@ def setup(channel):
         routing_key="listing.*"
     )
 
+    # notif.auction: receives auction.no_eligible_bidders events
+    # Used for: "No eligible bidders" email to seller
+    channel.queue_declare(queue="notif.auction", durable=True)
+    channel.queue_bind(
+        exchange="market.events",
+        queue="notif.auction",
+        routing_key="auction.no_eligible_bidders"
+    )
+
+    # notif.payment: receives payment.success and payment.failed events
+    # Used for: "Payment confirmed!" / "Payment failed" emails to buyer + seller
+    channel.queue_declare(queue="notif.payment", durable=True)
+    channel.queue_bind(
+        exchange="market.events",
+        queue="notif.payment",
+        routing_key="payment.*"
+    )
+
     print("AMQP setup complete: dispatch_notification queues declared")

@@ -75,15 +75,25 @@ def create_listing():
                     "listingId": listing.listing_id,
                     "sellerId": listing.seller_id
                 })
-                publish_message(
-                    channel, "", "market.timers.start",
-                    {"listingId": listing.listing_id, "type": "auction.start"},
-                    properties=pika.BasicProperties(
-                        delivery_mode=2,
-                        expiration=str(ttl_ms)
-                    )
+
+                # unique queue per listing — queue-level TTL ensures precise expiry
+                timer_queue = f"market.timer.{listing.listing_id}.start"
+                channel.queue_declare(
+                    queue=timer_queue,
+                    durable=True,
+                    arguments={
+                        "x-message-ttl": ttl_ms,
+                        "x-dead-letter-exchange": "",
+                        "x-dead-letter-routing-key": "market.dlq.start",
+                        "x-expires": ttl_ms + 30000,
+                    }
                 )
-                print(f"Timer set: auction.start for listing {listing.listing_id} in {ttl_ms}ms")
+                publish_message(
+                    channel, "", timer_queue,
+                    {"listingId": listing.listing_id, "type": "auction.start"},
+                    properties=pika.BasicProperties(delivery_mode=2)
+                )
+                print(f"Timer set: auction.start for listing {listing.listing_id} in {ttl_ms}ms (queue: {timer_queue})")
 
             _amqp_publish(_publish)
 

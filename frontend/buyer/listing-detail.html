@@ -10,8 +10,9 @@
 <body>
     <!-- Buyer navbar -->
     <nav class="navbar">
-        <div class="container">
+        <div class="container" style="position: relative;">
             <span class="navbar-text">Buyer: <span id="navbar-user-name">Loading...</span></span>
+            <span class="navbar-brand" style="position: absolute; left: 50%; transform: translateX(-50%);">BidBoard</span>
             <div id="buyer-switcher" class="d-flex align-items-center ms-auto"></div>
         </div>
     </nav>
@@ -199,6 +200,7 @@
                     document.getElementById("bid-form-section").style.display =
                         listing.status === "ACTIVE" ? "" : "none";
                     loadBids();
+                    if (listing.status === "ACTIVE") connectBidWebSocket(listingId);
                 } else {
                     document.getElementById("auction-section").style.display = "none";
                     document.getElementById("fixed-section").style.display = "block";
@@ -353,6 +355,28 @@
                 btn.disabled = false;
                 btn.textContent = "Place Bid";
             }
+        }
+
+        function connectBidWebSocket(listingId) {
+            const wsUrl = `ws://${window.location.hostname}:8000/ws`;
+            const ws = new WebSocket(wsUrl);
+
+            ws.onopen = () => {
+                ws.send(JSON.stringify({ action: "subscribe", listingId: listingId }));
+                console.log(`[ws] Subscribed to live bid updates for listing ${listingId}`);
+            };
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                if (data.event === "bid.placed" && String(data.listingId) === String(listingId)) {
+                    loadBids();
+                }
+            };
+
+            ws.onclose = () => {
+                // reconnect after 3s if the connection drops (e.g. server restart)
+                setTimeout(() => connectBidWebSocket(listingId), 3000);
+            };
         }
 
         async function loadOfferStatus() {

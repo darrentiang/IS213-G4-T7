@@ -5,6 +5,7 @@ plugins:
     exposed_headers: null
     headers:
     - Content-Type
+    - X-Buyer-Id
     max_age: null
     methods:
     - GET
@@ -20,7 +21,7 @@ plugins:
     - '*'
     preflight_continue: false
     private_network: false
-  enabled: false
+  enabled: true
   name: cors
   protocols:
   - grpc
@@ -50,7 +51,7 @@ plugins:
     hide_client_headers: false
     hour: null
     limit_by: header
-    minute: 5
+    minute: 10
     month: null
     path: null
     policy: local
@@ -88,6 +89,29 @@ plugins:
 services:
 - connect_timeout: 60000
   enabled: true
+  host: ws-server
+  name: ws-server
+  port: 6000
+  protocol: http
+  read_timeout: 60000
+  retries: 5
+  routes:
+  - https_redirect_status_code: 426
+    name: ws-bids
+    path_handling: v0
+    paths:
+    - /ws
+    preserve_host: false
+    protocols:
+    - http
+    - https
+    regex_priority: 0
+    request_buffering: false
+    response_buffering: false
+    strip_path: false
+  write_timeout: 60000
+- connect_timeout: 60000
+  enabled: true
   host: bid
   name: bid
   port: 5002
@@ -107,7 +131,7 @@ services:
     regex_priority: 0
     request_buffering: true
     response_buffering: true
-    strip_path: true
+    strip_path: false
   - https_redirect_status_code: 426
     name: ranked_bids
     path_handling: v0
@@ -120,7 +144,7 @@ services:
     regex_priority: 0
     request_buffering: true
     response_buffering: true
-    strip_path: true
+    strip_path: false
   write_timeout: 60000
 - connect_timeout: 60000
   enabled: true
@@ -143,7 +167,7 @@ services:
     regex_priority: 0
     request_buffering: true
     response_buffering: true
-    strip_path: true
+    strip_path: false
   write_timeout: 60000
 - connect_timeout: 60000
   enabled: true
@@ -166,7 +190,7 @@ services:
     regex_priority: 0
     request_buffering: true
     response_buffering: true
-    strip_path: true
+    strip_path: false
   write_timeout: 60000
 - connect_timeout: 60000
   enabled: true
@@ -189,7 +213,7 @@ services:
     regex_priority: 0
     request_buffering: true
     response_buffering: true
-    strip_path: true
+    strip_path: false
   write_timeout: 60000
 - connect_timeout: 60000
   enabled: true
@@ -212,5 +236,5 @@ services:
     regex_priority: 0
     request_buffering: true
     response_buffering: true
-    strip_path: true
+    strip_path: false
   write_timeout: 60000

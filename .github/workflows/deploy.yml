@@ -16,6 +16,7 @@ jobs:
       payment: ${{ steps.changes.outputs.payment }}
       dispatch_notification: ${{ steps.changes.outputs.dispatch_notification }}
       close_auction: ${{ steps.changes.outputs.close_auction }}
+      ws_server: ${{ steps.changes.outputs.ws_server }}
     steps:
       - uses: actions/checkout@v4
 
@@ -37,6 +38,8 @@ jobs:
               - 'services/dispatch_notification/**'
             close_auction:
               - 'services/close_auction/**'
+            ws_server:
+              - 'services/ws_server/**'
 
   build-push:
     needs: detect-changes
@@ -72,6 +75,10 @@ jobs:
             context: ./services/close_auction
             image: jiaying0811/bidboard-close-auction
             changed: ${{ needs.detect-changes.outputs.close_auction }}
+          - service: ws-server
+            context: ./services/ws_server
+            image: jiaying0811/bidboard-ws-server
+            changed: ${{ needs.detect-changes.outputs.ws_server }}
     steps:
       - uses: actions/checkout@v4
 

@@ -27,12 +27,10 @@ This is a group project (6 people) for IS213 Enterprise Solution Development at 
 
 No escrow, no confirm receipt, no disputes. Payment is a direct charge via Stripe. Final status is SOLD.
 
----
-
-## Coding Conventions
-
-- **Python code + DB columns** → snake_case (`listing_id`, `seller_id`, `start_time`)
-- **All JSON (API requests, responses, RabbitMQ payloads)** → camelCase (`listingId`, `sellerId`, `startTime`)
+**Assumptions/Simplifications:**
+- No authentication (not assessed). Hardcoded user IDs on frontend.
+- Seller does not receive payment via Stripe Connect. Payment goes to the platform (Stripe test account). Seller "getting paid" is assumed.
+- Stripe test mode only. No real money.
 
 ---
 
@@ -64,9 +62,9 @@ No escrow, no confirm receipt, no disputes. Payment is a direct charge via Strip
 
 ### US1: Seller Creates Auction Listing
 
-**Pattern:** Event-driven state machine (DLQ/TTL timers)
+**Pattern:** Event-driven state machine (DLQ/TTL timers with per-timer ephemeral queues)
 
-**Boxes:** Seller Web UI, KONG API Gateway, Listing, market.timers, market.dlq, market.events (Topic Exchange), Dispatch Notification, User, Notification
+**Boxes:** Seller Web UI, KONG API Gateway, Listing, Ephemeral Timer Queue, market.dlq.start, market.events (Topic Exchange), Dispatch Notification, User, Notification
 
 **Part 1: Seller Creates Listing**
 
@@ -74,7 +72,7 @@ No escrow, no confirm receipt, no disputes. Payment is a direct charge via Strip
 |------|-----------|----------|-------------|
 | 1 | Seller Web UI → KONG → Listing | HTTP | POST /listings {sellerId, title, description, imageUrl, startingPrice, startTime, endTime} |
 | 2 | Listing → listing_db | — | Save listing with status = SCHEDULED |
-| 3 | Listing → market.timers | AMQP | Publish auction.start {listingId} with TTL = time until startTime (TIMER 1) |
+| 3 | Listing → market.timer.{listingId}.start | AMQP | Create ephemeral queue with queue-level TTL = time until startTime, x-dead-letter-exchange → market.dlq.start, x-expires = TTL + 30s. Publish auction.start {listingId} to this queue (TIMER 1) |
 | 4 | Listing → market.events | AMQP | Publish listing.scheduled {listingId, sellerId}, Routing Key: listing.scheduled |
 | 5 | Listing → KONG → Seller Web UI | HTTP | Return 201 Created |
 
@@ -86,15 +84,17 @@ No escrow, no confirm receipt, no disputes. Payment is a direct charge via Strip
 | 7 | Dispatch Notification → User | HTTP | GET /users/{sellerId} → returns seller email |
 | 8 | Dispatch Notification → Notification | HTTP | POST /notifications → email seller "Auction scheduled for [startTime]!" |
 
-**DLQ mechanism (not a step):** market.timers configured with x-dead-letter-exchange → market.dlq. TTL expires, message auto-routed. No consumer between queues. Built-in RabbitMQ behavior.
+**DLQ mechanism (not a step):** Each ephemeral timer queue (market.timer.{listingId}.start) is configured with x-dead-letter-exchange pointing to market.dlq.start. The queue has a queue-level TTL (x-message-ttl). When TTL expires, the single message in the queue is dead-lettered to market.dlq.start. The ephemeral queue auto-deletes via x-expires (TTL + 30s). No consumer between queues. Built-in RabbitMQ behavior.
+
+**Why ephemeral queues instead of a shared timer queue:** Per-message TTL in a shared queue causes **head-of-line blocking** — RabbitMQ only checks TTL at the head of the queue. If a longer TTL message is ahead of a shorter one, the shorter message is blocked. Ephemeral queues solve this: each queue has exactly one message, always at the head, so TTL is evaluated immediately and precisely.
 
 **Part 2: Timer 1 Fires (Auction Goes Live)**
 
 | Step | From → To | Protocol | Description |
 |------|-----------|----------|-------------|
-| 9 | market.dlq → Listing | AMQP | Consume auction.start {listingId} from DLQ |
+| 9 | market.dlq.start → Listing | AMQP | Consume auction.start {listingId} from DLQ |
 | 10 | Listing → listing_db | — | Update listing status → ACTIVE |
-| 11 | Listing → market.timers | AMQP | Publish auction.close {listingId} with TTL = endTime - startTime (TIMER 2) |
+| 11 | Listing → market.timer.{listingId}.close | AMQP | Create ephemeral queue with queue-level TTL = endTime - now, x-dead-letter-exchange → market.dlq.close, x-expires = TTL + 30s. Publish auction.close {listingId} (TIMER 2) |
 | 12 | Listing → market.events | AMQP | Publish listing.active {listingId, sellerId}, Routing Key: listing.active |
 
 **Steps 13-15 happen in background.**
@@ -105,7 +105,7 @@ No escrow, no confirm receipt, no disputes. Payment is a direct charge via Strip
 | 14 | Dispatch Notification → User | HTTP | GET /users/{sellerId} → returns seller email |
 | 15 | Dispatch Notification → Notification | HTTP | POST /notifications → email seller "Your auction is now LIVE!" |
 
-**End:** US1 ends here. Timer 2 is ticking. US2 Diagram 2 begins when auction.close fires from the DLQ.
+**End:** US1 ends here. Timer 2 is ticking. US2 Diagram 2 begins when auction.close fires from market.dlq.close.
 
 ---
 
@@ -136,7 +136,7 @@ No escrow, no confirm receipt, no disputes. Payment is a direct charge via Strip
 | 6 | Dispatch Notification → User | HTTP | GET /users/{prevHighestBuyerId} → returns outbid buyer email |
 | 7 | Dispatch Notification → Notification | HTTP | POST /notifications → email "You've been outbid!" |
 
-**End:** Diagram 1 ends here. Can repeat many times. US2 Diagram 2 begins when auction.close fires from DLQ (Timer 2 from US1).
+**End:** Diagram 1 ends here. Can repeat many times. US2 Diagram 2 begins when auction.close fires from market.dlq.close (Timer 2 from US1).
 
 ---
 
@@ -144,15 +144,15 @@ No escrow, no confirm receipt, no disputes. Payment is a direct charge via Strip
 
 **Pattern:** Orchestration + Saga (cascade loop)
 
-**Boxes:** market.timers, market.dlq, Close Auction, Listing, Bid, User, Payment, Stripe, market.events (Topic Exchange), Dispatch Notification, Notification
+**Boxes:** Ephemeral Timer Queue, market.dlq.close, Close Auction, Listing, Bid, User, Payment, Stripe, market.events (Topic Exchange), Dispatch Notification, Notification
 
-**DLQ annotation (not a step):** market.timers → market.dlq via x-dead-letter-exchange. TTL expires, auto-routed.
+**DLQ annotation (not a step):** Ephemeral queue market.timer.{listingId}.close → market.dlq.close via x-dead-letter-exchange. Queue-level TTL expires, auto-routed. Ephemeral queue auto-deletes.
 
 **Main flow (black arrows):**
 
 | Step | From → To | Protocol | Description |
 |------|-----------|----------|-------------|
-| 1 | market.dlq → Close Auction | AMQP | Consume auction.close {listingId} from DLQ |
+| 1 | market.dlq.close → Close Auction | AMQP | Consume auction.close {listingId} from DLQ |
 | 2 | Close Auction → Listing | HTTP | PATCH /listings/{id}/status → CLOSED_PENDING_PAYMENT |
 | 3 | Close Auction → Bid | HTTP | POST /auctions/{id}/close → returns rankedBids[] |
 
@@ -161,14 +161,14 @@ No escrow, no confirm receipt, no disputes. Payment is a direct charge via Strip
 | Step | From → To | Protocol | Description |
 |------|-----------|----------|-------------|
 | 4 | Close Auction → User | HTTP | GET /users/{buyerId} → returns stripe_id |
-| 5 | Close Auction → Payment | HTTP | POST /payments/charge {listingId, buyerId, amount, stripeId, listingType: "AUCTION"} |
+| 5 | Close Auction → Payment | HTTP | POST /payments/charge {listingId, buyerId, amount, stripeId, listingType: "AUCTION", idempotencyKey} |
 | 6 | Payment → Stripe | HTTP | Charge via Stripe → returns result |
 | 7 | Payment → Close Auction | HTTP | Returns result (success/failed) — for cascade loop decision |
 | 8 | Payment → market.events | AMQP | Publish payment.success OR payment.failed, Routing Key: payment.success / payment.failed |
 
-**Loop logic:** If step 7 returned FAILED → back to step 4 with next bidder from rankedBids[]. If SUCCESS → loop breaks.
+**Loop logic:** If step 7 returned FAILED → back to step 4 with next bidder from rankedBids[]. If SUCCESS → loop breaks. Close Auction does NOT send a second PATCH after success — the payment.success consumer handles marking SOLD.
 
-**Post-payment subscriber reactions (shared with US3 D3):** Payment events go into market.events. Listing reacts to payment.success (marks SOLD). Dispatch Notification sends emails. See US3 Diagram 3 for the subscriber flow — it's identical for both scenarios.
+**Post-payment subscriber reactions (shared with US3 D3):** Payment events go into market.events. Listing reacts to payment.success (marks SOLD, sets winning_buyer_id and winning_price). Dispatch Notification sends emails. See US3 Diagram 3 for the subscriber flow — it's identical for both scenarios.
 
 **Edge case: All bidders fail (blue arrows):**
 
@@ -262,7 +262,7 @@ No escrow, no confirm receipt, no disputes. Payment is a direct charge via Strip
 |------|-----------|----------|-------------|
 | 1 | market.events → Process Payment | AMQP | Consume offer.accepted, [BKEY] offer.accepted, Queue: process_payment.offer_accepted |
 | 2 | Process Payment → User | HTTP | GET /users/{buyerId} → returns stripe_id |
-| 3 | Process Payment → Payment | HTTP | POST /payments/charge {listingId, buyerId, amount, stripeId, listingType: "FIXED"} |
+| 3 | Process Payment → Payment | HTTP | POST /payments/charge {listingId, buyerId, amount, stripeId, listingType: "FIXED", idempotencyKey, offerId} |
 | 4 | Payment → Stripe | HTTP | Charge via Stripe → returns result |
 | 5a | Payment → market.events | AMQP | Publish payment.success {listingId, buyerId, amount, listingType, offerId}, Routing Key: payment.success |
 | 5b | Payment → market.events | AMQP | Publish payment.failed {listingId, buyerId, listingType, offerId}, Routing Key: payment.failed |
@@ -271,7 +271,7 @@ No escrow, no confirm receipt, no disputes. Payment is a direct charge via Strip
 
 | Step | From → To | Protocol | Description |
 |------|-----------|----------|-------------|
-| 6a | market.events → Listing | AMQP | Consume payment.success, [BKEY] payment.success, Queue: listing.payment → set status SOLD |
+| 6a | market.events → Listing | AMQP | Consume payment.success, [BKEY] payment.success, Queue: listing.sold → set status SOLD, winning_buyer_id, winning_price |
 | 7a | market.events → Dispatch Notification | AMQP | Consume payment.success (in parallel with 6a), [BKEY] payment.*, Queue: notif.payment |
 | 8a | Dispatch Notification → User | HTTP | GET /users/{buyerId + sellerId} → get emails |
 | 9a | Dispatch Notification → Notification | HTTP | POST /notifications → email both "Payment confirmed! Transaction complete" |
@@ -280,12 +280,12 @@ No escrow, no confirm receipt, no disputes. Payment is a direct charge via Strip
 
 | Step | From → To | Protocol | Description |
 |------|-----------|----------|-------------|
-| 6b | market.events → Offer | AMQP | Consume payment.failed, [BKEY] payment.failed, Queue: offer.payment_failed → set status CANCELLED |
+| 6b | market.events → Offer | AMQP | Consume payment.failed, [BKEY] payment.failed, Queue: offer.payment_failed → set status CANCELLED (only when listingType=FIXED, ignores AUCTION) |
 | 7b | market.events → Dispatch Notification | AMQP | Consume payment.failed (in parallel with 6b), [BKEY] payment.*, Queue: notif.payment |
 | 8b | Dispatch Notification → User | HTTP | GET /users/{buyerId + sellerId} → get emails |
 | 9b | Dispatch Notification → Notification | HTTP | POST /notifications → email both "Payment failed, offer cancelled" |
 
-**Key point:** After step 5, nobody coordinates. Listing, Offer, and Dispatch Notification all react independently to payment events. This is choreography. This same post-payment flow applies to US2 as well (Listing marks SOLD on payment.success, Dispatch Notification sends emails).
+**Key point:** After step 5, nobody coordinates. Listing, Offer, and Dispatch Notification all react independently to payment events. This is choreography. This same post-payment flow applies to US2 as well (Listing marks SOLD on payment.success, Dispatch Notification sends emails). For fixed-price failure, the listing stays ACTIVE so the seller can accept other offers.
 
 ---
 
@@ -293,31 +293,32 @@ No escrow, no confirm receipt, no disputes. Payment is a direct charge via Strip
 
 ### Atomic Services (Flask + MySQL)
 
-| Service | Port | Database | Used In |
-|---------|------|----------|---------|
-| User | 5004 | user_db | US1, US2, US3 — provides email and stripe_id |
-| Listing | 5001 | listing_db | US1, US2, US3 — listings, status management, DLQ timers, reacts to payment.success |
-| Bid | 5002 | bid_db | US2 — bids on auction listings |
-| Offer | 5003 | offer_db | US3 — negotiation lifecycle, reacts to payment.failed |
-| Payment | 5005 | payment_db | US2, US3 — Stripe charges, always publishes payment events |
-| Notification (OutSystems) | — | — | US1, US2, US3 — receives HTTP from Dispatch Notification, sends emails |
+| Service | Port | Database | Used In | Threading |
+|---------|------|----------|---------|-----------|
+| User | 5004 | user_db | US1, US2, US3 — provides email and stripe_id | HTTP only |
+| Listing | 5001 | listing_db | US1, US2, US3 — listings, status management, DLQ timers, reacts to payment.success | HTTP + AMQP consumer (background thread) |
+| Bid | 5002 | bid_db | US2 — bids on auction listings | HTTP only (publishes AMQP, no consumer) |
+| Offer | 5003 | offer_db | US3 — negotiation lifecycle, reacts to payment.failed | HTTP + AMQP consumer (background thread) |
+| Payment | 5005 | payment_db | US2, US3 — Stripe charges, always publishes payment events | HTTP only (publishes AMQP, no consumer) |
+| Notification (OutSystems) | — | — | US1, US2, US3 — receives HTTP from Dispatch Notification, sends emails via SendGrid | OutSystems hosted |
 
-### Composite Services (Flask, no database)
+### Composite Services (Flask or consumer-only, no database)
 
-| Service | Port | Used In | One Job |
-|---------|------|---------|---------|
-| Close Auction | 5006 | US2 | Orchestrate auction close + payment cascade loop |
-| Process Payment | 5007 | US3 | Consume offer.accepted, call User for stripe_id, call Payment to charge |
-| Dispatch Notification | 5008 | US1, US2, US3 | Subscribe to events, look up email from User, call Notification to send |
+| Service | Port | Used In | One Job | Type |
+|---------|------|---------|---------|------|
+| Close Auction | 5006 | US2 | Orchestrate auction close + payment cascade loop | Consumer-only (no Flask HTTP) |
+| Process Payment | 5007 | US3 | Consume offer.accepted, call User for stripe_id, call Payment to charge | Consumer-only (no Flask HTTP) |
+| Dispatch Notification | 5008 | US1, US2, US3 | Subscribe to events, look up email from User, call Notification to send | Consumer-only (no Flask HTTP) |
 
 ### Infrastructure
 
 | Component | Purpose |
 |-----------|---------|
-| KONG API Gateway | Routing + rate limiting on POST /bids (BTL) |
-| RabbitMQ | Topic exchange (market.events) + DLQ/TTL timers (market.timers/dlq) (BTL) |
-| Docker + Docker Compose | Containerization, runs locally |
-| Stripe | External payment API (test mode) |
+| KONG API Gateway | Routing all frontend→service requests + rate limiting on POST /bids (BTL). DB mode with PostgreSQL, configured via Admin API |
+| RabbitMQ | Topic exchange (market.events) + DLQ/TTL timers with per-timer ephemeral queues (BTL). Separate DLQs: market.dlq.start (Listing), market.dlq.close (Close Auction) |
+| Docker + Docker Compose | Containerization. docker-compose-dev.yml for local (builds from source), docker-compose.yml for production (pulls images from Docker Hub) |
+| Stripe | External payment API (sandbox/test mode). PaymentIntents API with confirm=True for server-side charging |
+| nginx | Serves static frontend files (buyer/seller HTML pages) on port 8080 |
 | WebSocket Channel | Separate from Bid, subscribes to bid.placed, pushes real-time updates to browsers (BTL) |
 
 ---
@@ -330,7 +331,7 @@ No escrow, no confirm receipt, no disputes. Payment is a direct charge via Strip
 | user_id | INT | PK, auto-increment |
 | email | VARCHAR(255) | |
 | name | VARCHAR(255) | |
-| stripe_id | VARCHAR(255) | Stripe customer ID |
+| stripe_id | VARCHAR(255) | Stripe customer ID (null for sellers) |
 | created_at | TIMESTAMP | |
 
 ### listing_db → listings
@@ -346,7 +347,8 @@ No escrow, no confirm receipt, no disputes. Payment is a direct charge via Strip
 | start_time | DATETIME | Auction only, nullable |
 | end_time | DATETIME | Auction only, nullable |
 | status | VARCHAR(50) | SCHEDULED, ACTIVE, CLOSED_PENDING_PAYMENT, SOLD, FAILED_NO_ELIGIBLE_BIDDER |
-| winning_buyer_id | INT | Nullable, set on auction close |
+| winning_buyer_id | INT | Nullable, set by payment.success consumer |
+| winning_price | DECIMAL(10,2) | Nullable, set by payment.success consumer from payload amount. Needed because highest bid isn't necessarily the winning bid (cascade fallback) |
 | created_at | TIMESTAMP | |
 
 ### bid_db → bids
@@ -367,7 +369,7 @@ No escrow, no confirm receipt, no disputes. Payment is a direct charge via Strip
 | seller_id | INT | |
 | amount | DECIMAL(10,2) | Current price, updated on counter |
 | status | VARCHAR(20) | PENDING, COUNTERED, ACCEPTED, REJECTED, CANCELLED |
-| turn | VARCHAR(10) | SELLER or BUYER |
+| turn | VARCHAR(10) | SELLER or BUYER (null when terminal state) |
 | created_at | TIMESTAMP | |
 | updated_at | TIMESTAMP | |
 
@@ -378,8 +380,8 @@ No escrow, no confirm receipt, no disputes. Payment is a direct charge via Strip
 | listing_id | INT | |
 | buyer_id | INT | |
 | amount | DECIMAL(10,2) | |
-| stripe_charge_id | VARCHAR(255) | From Stripe |
-| idempotency_key | VARCHAR(255) | Prevent double charges |
+| stripe_charge_id | VARCHAR(255) | From Stripe PaymentIntent |
+| idempotency_key | VARCHAR(255) | Prevent double charges. Format: auction_{listingId}_{buyerId}_{createdAt} or offer_{offerId}_{buyerId}_{timestamp} |
 | status | VARCHAR(20) | SUCCESS or FAILED |
 | created_at | TIMESTAMP | |
 
@@ -401,8 +403,8 @@ No escrow, no confirm receipt, no disputes. Payment is a direct charge via Strip
 | GET | /listings/{id} | Get listing details |
 | PATCH | /listings/{id}/status | Update listing status |
 
-AMQP publishes: listing.scheduled, listing.active (to market.events). auction.start, auction.close (to market.timers with TTL).
-AMQP consumes: auction.start from market.dlq. payment.success from market.events ([BKEY] payment.success, Queue: listing.payment) → marks SOLD.
+AMQP publishes: listing.scheduled, listing.active (to market.events). auction.start (to ephemeral market.timer.{id}.start), auction.close (to ephemeral market.timer.{id}.close).
+AMQP consumes: auction.start from market.dlq.start (Timer 1 fires → ACTIVE + set Timer 2). payment.success from market.events ([BKEY] payment.success, Queue: listing.sold) → marks SOLD, sets winning_buyer_id, winning_price.
 
 ### Bid (port 5002)
 | Method | Path | Description |
@@ -417,20 +419,24 @@ AMQP publishes: bid.placed (to market.events).
 ### Offer (port 5003)
 | Method | Path | Description |
 |--------|------|-------------|
+| GET | /offers?listingId={id} | Get all offers for a listing (seller views) |
+| GET | /offers?buyerId={id} | Get all offers by a buyer (My Offers page) |
 | POST | /offers | Make an offer |
 | PATCH | /offers/{id} | Counter an offer (seller) |
 | POST | /offers/{id}/accept | Accept offer or counter |
 | POST | /offers/{id}/reject | Reject counter (buyer only) |
 
 AMQP publishes: offer.created, offer.countered, offer.accepted, offer.rejected (all to market.events).
-AMQP consumes: payment.failed from market.events ([BKEY] payment.failed, Queue: offer.payment_failed) → marks offer CANCELLED (only when listingType=FIXED).
+AMQP consumes: payment.failed from market.events ([BKEY] payment.failed, Queue: offer.payment_failed) → marks offer CANCELLED (only when listingType=FIXED, ignores AUCTION payment failures).
 
 ### Payment (port 5005)
 | Method | Path | Description |
 |--------|------|-------------|
 | POST | /payments/charge | Charge via Stripe. Returns HTTP result to caller AND publishes to RabbitMQ |
 
+Request body: {listingId, buyerId, amount, stripeId, listingType, idempotencyKey, offerId (optional)}
 AMQP publishes: payment.success, payment.failed (to market.events). Payloads always include listingType field for downstream filtering.
+Stripe errors caught: CardError, InvalidRequestError, AuthenticationError. All failures save FAILED to DB and publish payment.failed.
 
 ### Notification / OutSystems
 | Method | Path | Description |
@@ -445,10 +451,18 @@ AMQP publishes: payment.success, payment.failed (to market.events). Payloads alw
 | Exchange | Type | Purpose |
 |----------|------|---------|
 | market.events | Topic | All business events with routing keys |
-| (default) | Direct | DLQ routing from market.timers → market.dlq |
+| (default) | Direct | Used by ephemeral timer queues for DLQ routing |
 
-### DLQ/TTL Timer Mechanism
-market.timers queue configured with x-dead-letter-exchange pointing to market.dlq. Messages published with per-message TTL sit in market.timers (no consumers). When TTL expires, RabbitMQ automatically routes them to market.dlq. No consumer between queues. Built-in RabbitMQ behavior.
+### DLQ/TTL Timer Mechanism (Ephemeral Queues)
+
+Each auction timer creates a unique ephemeral queue:
+- **Queue name:** market.timer.{listingId}.start or market.timer.{listingId}.close
+- **x-message-ttl:** Queue-level TTL (time until the event should fire)
+- **x-dead-letter-exchange:** "" (default exchange)
+- **x-dead-letter-routing-key:** market.dlq.start or market.dlq.close
+- **x-expires:** TTL + 30000ms (auto-deletes the queue after use)
+
+One message published to each ephemeral queue. Since each queue has exactly one message (always at the head), TTL is evaluated immediately. No head-of-line blocking. When TTL expires, message is dead-lettered to the corresponding DLQ. Listing consumes from market.dlq.start. Close Auction consumes from market.dlq.close.
 
 ### Event Payloads
 | Event | Routing Key | Payload |
@@ -463,14 +477,16 @@ market.timers queue configured with x-dead-letter-exchange pointing to market.dl
 | payment.success | payment.success | {listingId, buyerId, amount, listingType, offerId} |
 | payment.failed | payment.failed | {listingId, buyerId, listingType, offerId} |
 | auction.no_eligible_bidders | auction.no_eligible_bidders | {listingId, sellerId} |
-| auction.start | — (direct to market.timers) | {listingId, type: "auction.start"} |
-| auction.close | — (direct to market.timers) | {listingId, type: "auction.close"} |
+| auction.start | — (to ephemeral queue) | {listingId, type: "auction.start"} |
+| auction.close | — (to ephemeral queue) | {listingId, type: "auction.close"} |
 
 ### Queues and Bindings
 | Queue | Bound To | [BKEY] | Consumer |
 |-------|----------|--------|----------|
-| market.timers | — (direct publish) | — | None (TTL holding, x-dead-letter-exchange → market.dlq) |
-| market.dlq | — (dead-letter target) | — | Listing (auction.start), Close Auction (auction.close) |
+| market.timer.{listingId}.start | — (ephemeral, direct publish) | — | None (TTL holding → dead-letters to market.dlq.start) |
+| market.timer.{listingId}.close | — (ephemeral, direct publish) | — | None (TTL holding → dead-letters to market.dlq.close) |
+| market.dlq.start | — (dead-letter target) | — | Listing (auction.start) |
+| market.dlq.close | — (dead-letter target) | — | Close Auction (auction.close) |
 | notif.listing | market.events | listing.* | Dispatch Notification |
 | notif.bid | market.events | bid.placed | Dispatch Notification |
 | notif.offer | market.events | offer.* | Dispatch Notification |
@@ -478,8 +494,8 @@ market.timers queue configured with x-dead-letter-exchange pointing to market.dl
 | notif.auction | market.events | auction.no_eligible_bidders | Dispatch Notification |
 | ws.bid_updates | market.events | bid.placed | WebSocket Channel |
 | process_payment.offer_accepted | market.events | offer.accepted | Process Payment |
-| listing.payment | market.events | payment.success | Listing (marks SOLD) |
-| offer.payment_failed | market.events | payment.failed | Offer (marks CANCELLED) |
+| listing.sold | market.events | payment.success | Listing (marks SOLD + winning_buyer_id + winning_price) |
+| offer.payment_failed | market.events | payment.failed | Offer (marks CANCELLED, only when listingType=FIXED) |
 
 ---
 
@@ -487,10 +503,34 @@ market.timers queue configured with x-dead-letter-exchange pointing to market.dl
 | Status | Meaning | Set By |
 |--------|---------|--------|
 | SCHEDULED | Auction created, waiting for startTime | Listing (on creation) |
-| ACTIVE | Live, accepting bids/offers | Listing (Timer 1 DLQ fire) |
-| CLOSED_PENDING_PAYMENT | Auction ended, payment cascade in progress | Close Auction (HTTP) |
-| SOLD | Payment succeeded | Listing (reacts to payment.success via AMQP) |
-| FAILED_NO_ELIGIBLE_BIDDER | All bidders' payments failed | Close Auction (HTTP) |
+| ACTIVE | Live, accepting bids/offers | Listing (Timer 1 DLQ fire). Also set immediately for FIXED listings on creation |
+| CLOSED_PENDING_PAYMENT | Auction ended, payment cascade in progress | Close Auction (HTTP PATCH) |
+| SOLD | Payment succeeded | Listing (reacts to payment.success via AMQP). Sets winning_buyer_id and winning_price |
+| FAILED_NO_ELIGIBLE_BIDDER | All bidders' payments failed | Close Auction (HTTP PATCH) |
+
+---
+
+## Stripe Integration
+
+### Setup
+- Stripe sandbox environment with test API key
+- Secret key stored as STRIPE_SECRET_KEY environment variable (in .env file, gitignored)
+- Payment Service uses stripe.PaymentIntent.create(confirm=True) for server-side charging
+- No user interaction needed (buyer can be offline when auction closes)
+- Currency: SGD
+
+### Test Customers
+| User | Stripe Customer ID | Card | Behavior |
+|------|-------------------|------|----------|
+| Alice (user 1, seller) | N/A | N/A | Seller, never charged |
+| Bob (user 2, buyer) | cus_UFTMQiGA5lpook | 4242 4242 4242 4242 | Always succeeds |
+| Charlie (user 3, buyer) | cus_UFTPSV7hB0vszX | 4000 0000 0000 0341 | Attaches ok, fails on charge |
+
+### Idempotency Keys
+- Auction: `auction_{listingId}_{buyerId}_{listing_createdAt}`
+- Offer: `offer_{offerId}_{buyerId}_{timestamp}`
+- Includes timestamp/createdAt to prevent collisions after DB wipes (Stripe remembers keys for 24 hours)
+- Passed to Stripe's PaymentIntent.create() so duplicate charges are prevented
 
 ---
 
@@ -498,9 +538,18 @@ market.timers queue configured with x-dead-letter-exchange pointing to market.dl
 
 | BTL | Where | Justification |
 |-----|-------|---------------|
-| DLQ/TTL Timers | US1 | Two chained timers for auction start and close. Repurposes DLQ from error handling to precision timing. Event-driven (no polling), decoupled from service code. Server-side triggers needed for backend actions even when no user is online |
+| DLQ/TTL Timers + Ephemeral Queues | US1 | Two chained timers for auction start and close. Repurposes DLQ from error handling to precision timing. Event-driven (no polling), decoupled from service code. Server-side triggers needed for backend actions even when no user is online. Discovered and solved head-of-line blocking with per-timer ephemeral queues using queue-level TTL. Each timer fires precisely regardless of other timers in the system |
 | WebSocket | US2 D1 | Real-time bid updates pushed to all viewers via separate WebSocket Channel. Critical for fair bidding in final seconds. Persistent push instead of polling |
-| KONG Rate Limiting | US2 D1 | Rate limits POST /bids to prevent bot sniping. Gateway-level enforcement (e.g. 5 bids/min per user) |
+| KONG Rate Limiting | US2 D1 | Rate limits POST /bids to prevent bot sniping. Gateway-level enforcement (e.g. 5 bids/min per user). KONG also provides centralized routing for all frontend→service requests |
+
+### Additional Technical Depth (frameable as BTL or talking points)
+| Item | Where | Description |
+|------|-------|-------------|
+| Payment cascade with fallback | US2 D2 | If highest bidder's payment fails, system automatically cascades to next bidder instead of failing the whole auction. Business error handling beyond simple CRUD |
+| Stripe idempotency pattern | US2 D2, US3 D3 | Prevents double charges using Stripe idempotency keys. If same charge is retried due to network failure, Stripe deduplicates. Production-grade payment safety |
+| Connection resilience | All services | Fresh-connection-per-publish for publishers (prevents heartbeat timeout). Reconnect loops for consumers (auto-recovers from connection drops). Production-grade patterns the labs don't teach |
+| Multi-threading (Flask + AMQP) | Listing, Offer | Services run HTTP endpoints and AMQP consumers simultaneously on separate threads. Necessary for choreography where services must react to events while still serving HTTP requests |
+| Manual ack with requeue | Close Auction | auto_ack=False ensures messages aren't lost if processing crashes mid-cascade. Message goes back to queue for retry |
 
 ---
 
@@ -508,13 +557,14 @@ market.timers queue configured with x-dead-letter-exchange pointing to market.dl
 | Component | Technology |
 |-----------|-----------|
 | Atomic Services | Python Flask + MySQL |
-| Composite Services | Python Flask (no DB) |
-| OutSystems Service | Notification |
-| Message Broker | RabbitMQ |
-| API Gateway | KONG |
-| External API | Stripe (test mode) |
-| Frontend | HTML, CSS, Bootstrap |
-| Containerization | Docker + Docker Compose (runs locally) |
+| Composite Services | Python (consumer-only or Flask, no DB) |
+| OutSystems Service | Notification (SendGrid for email) |
+| Message Broker | RabbitMQ (topic exchange, DLQ/TTL, ephemeral queues) |
+| API Gateway | KONG (DB mode, PostgreSQL) |
+| External API | Stripe (sandbox, PaymentIntents API) |
+| Frontend | HTML, CSS, Bootstrap (served by nginx) |
+| Containerization | Docker + Docker Compose |
+| CI/CD | GitHub Actions → Docker Hub → Azure VM |
 
 ---
 
@@ -523,4 +573,10 @@ market.timers queue configured with x-dead-letter-exchange pointing to market.dl
 - **User:** all 3 scenarios (email lookups via Dispatch Notification, stripe_id lookups via Close Auction and Process Payment)
 - **Payment:** US2 and US3 (called by Close Auction in US2, called by Process Payment in US3. Always publishes payment events)
 - **Notification (OutSystems):** all 3 scenarios (called by Dispatch Notification via HTTP)
-- **Dispatch Notification:** all 3 scenarios (subscribes to 10 event types, enriches with email from User, calls Notification)
+- **Dispatch Notification:** all 3 scenarios (subscribes to all event types, enriches with email from User, calls Notification)
+
+---
+
+## Coding Conventions
+- **Python code + DB columns** → snake_case (listing_id, seller_id, start_time)
+- **All JSON (API requests, responses, RabbitMQ payloads)** → camelCase (listingId, sellerId, startTime)

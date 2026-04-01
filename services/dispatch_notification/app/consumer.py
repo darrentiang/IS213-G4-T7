@@ -14,13 +14,27 @@ import json
 import time
 import hashlib
 import requests
+from datetime import datetime, timezone, timedelta
 from os import environ
+
+SGT = timezone(timedelta(hours=8))
+
+def to_sgt(utc_str):
+    """Convert ISO UTC datetime string to SGT formatted string."""
+    try:
+        dt = datetime.fromisoformat(utc_str).replace(tzinfo=timezone.utc)
+        return dt.astimezone(SGT).strftime("%d %b %Y, %I:%M %p SGT")
+    except Exception:
+        return utc_str
 from app.amqp_lib import connect
 from app import amqp_setup
 
 USER_SERVICE_URL = environ.get("USER_SERVICE_URL", "http://user:5004")
 LISTING_SERVICE_URL = environ.get("LISTING_SERVICE_URL", "http://listing:5001")
-NOTIFICATION_SERVICE_URL = environ.get("NOTIFICATION_SERVICE_URL", "http://notification:5006")
+NOTIFICATION_URL = environ.get(
+    "NOTIFICATION_SERVICE_URL",
+    "https://personal-1hkpzqtq.outsystemscloud.com/NotificationService/rest/NotificationApi/notifications"
+)
 
 amqp_host = environ.get("RABBITMQ_HOST", "localhost")
 amqp_port = int(environ.get("RABBITMQ_PORT", 5672))
@@ -85,7 +99,7 @@ def handle_bid_placed(channel, method, properties, body):
     # send the outbid notification via Notification service
     try:
         notif_response = requests.post(
-            f"{NOTIFICATION_SERVICE_URL}/notifications",
+            NOTIFICATION_URL,
             json={
                 "recipientEmail": email,
                 "subject": "You've been outbid!",
@@ -135,7 +149,7 @@ def handle_listing_event(channel, method, properties, body):
             listing_response = requests.get(f"{LISTING_SERVICE_URL}/listings/{listing_id}")
             listing_response.raise_for_status()
             listing = listing_response.json().get("data", {})
-            start_time = listing.get("start_time", "the scheduled time")
+            start_time = to_sgt(listing.get("startTime", "")) or "the scheduled time"
         except Exception as e:
             print(f"[listing.scheduled] Failed to get listing {listing_id}: {e}")
             start_time = "the scheduled time"
@@ -155,7 +169,7 @@ def handle_listing_event(channel, method, properties, body):
     # Send email via Notification service
     try:
         notif_response = requests.post(
-            f"{NOTIFICATION_SERVICE_URL}/notifications",
+            NOTIFICATION_URL,
             json={"recipientEmail": email, "subject": subject, "body": body_text}
         )
         notif_response.raise_for_status()
@@ -190,7 +204,7 @@ def handle_auction_no_eligible_bidders(channel, method, properties, body):
 
     try:
         notif_response = requests.post(
-            f"{NOTIFICATION_SERVICE_URL}/notifications",
+            NOTIFICATION_URL,
             json={
                 "recipientEmail": email,
                 "subject": "Auction ended — no eligible bidders",
@@ -257,13 +271,104 @@ def handle_payment_event(channel, method, properties, body):
             continue
         try:
             notif_resp = requests.post(
-                f"{NOTIFICATION_SERVICE_URL}/notifications",
+                NOTIFICATION_URL,
                 json={"recipientEmail": email, "subject": subject, "body": body_text}
             )
             notif_resp.raise_for_status()
             print(f"[{routing_key}] Notification sent to {role} ({email})")
         except Exception as e:
             print(f"[{routing_key}] Failed to send notification to {role} ({email}): {e}")
+
+    channel.basic_ack(delivery_tag=method.delivery_tag)
+
+
+def handle_offer_event(channel, method, properties, body):
+    """
+    Handles offer.created, offer.countered, offer.accepted, offer.rejected.
+    Queue: notif.offer, binding key: offer.*
+    """
+    routing_key = method.routing_key
+    print(f"[{routing_key}] Received: {body}")
+    message = json.loads(body)
+
+    listing_id = message.get("listingId")
+    buyer_id = message.get("buyerId")
+    seller_id = message.get("sellerId")
+    amount = message.get("amount")
+
+    def get_email(user_id):
+        resp = requests.get(f"{USER_SERVICE_URL}/users/{user_id}")
+        resp.raise_for_status()
+        return resp.json().get("data", {}).get("email")
+
+    if routing_key == "offer.created":
+        # Notify seller: "You received an offer of $X"
+        try:
+            email = get_email(seller_id)
+        except Exception as e:
+            print(f"[{routing_key}] Failed to get seller {seller_id}: {e}")
+            channel.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
+            return
+        recipients = [("seller", email)]
+        subject = f"You received an offer of ${amount:.2f}"
+        body_text = f"A buyer has made an offer of ${amount:.2f} on your listing #{listing_id}. Log in to accept, counter, or reject."
+
+    elif routing_key == "offer.countered":
+        # Notify buyer: "Seller countered at $X"
+        try:
+            email = get_email(buyer_id)
+        except Exception as e:
+            print(f"[{routing_key}] Failed to get buyer {buyer_id}: {e}")
+            channel.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
+            return
+        recipients = [("buyer", email)]
+        subject = f"Seller countered at ${amount:.2f}"
+        body_text = f"The seller has countered your offer on listing #{listing_id} with ${amount:.2f}. Log in to accept or reject."
+
+    elif routing_key == "offer.accepted":
+        # Notify buyer: "Your offer has been accepted!"
+        try:
+            email = get_email(buyer_id)
+        except Exception as e:
+            print(f"[{routing_key}] Failed to get buyer {buyer_id}: {e}")
+            channel.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
+            return
+        recipients = [("buyer", email)]
+        subject = "Your offer has been accepted!"
+        body_text = f"Your offer of ${amount:.2f} on listing #{listing_id} has been accepted. Payment will be processed shortly."
+
+    elif routing_key == "offer.rejected":
+        # Notify seller: "Buyer rejected your counter"
+        try:
+            email = get_email(seller_id)
+        except Exception as e:
+            print(f"[{routing_key}] Failed to get seller {seller_id}: {e}")
+            channel.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
+            return
+        recipients = [("seller", email)]
+        subject = "Buyer rejected your counter offer"
+        body_text = f"The buyer has rejected your counter offer on listing #{listing_id}. The offer has been closed."
+
+    else:
+        print(f"[{routing_key}] Unhandled offer event. Skipping.")
+        channel.basic_ack(delivery_tag=method.delivery_tag)
+        return
+
+    for role, email in recipients:
+        if not email:
+            print(f"[{routing_key}] No email for {role}. Skipping.")
+            continue
+        try:
+            notif_resp = requests.post(
+                NOTIFICATION_URL,
+                json={"recipientEmail": email, "subject": subject, "body": body_text}
+            )
+            notif_resp.raise_for_status()
+            print(f"[{routing_key}] Notification sent to {role} ({email})")
+        except Exception as e:
+            print(f"[{routing_key}] Failed to send notification to {role} ({email}): {e}")
+            _retry_or_discard(channel, method, body, routing_key)
+            return
 
     channel.basic_ack(delivery_tag=method.delivery_tag)
 
@@ -299,6 +404,12 @@ def start():
             channel.basic_consume(
                 queue="notif.payment",
                 on_message_callback=handle_payment_event,
+                auto_ack=False
+            )
+
+            channel.basic_consume(
+                queue="notif.offer",
+                on_message_callback=handle_offer_event,
                 auto_ack=False
             )
 

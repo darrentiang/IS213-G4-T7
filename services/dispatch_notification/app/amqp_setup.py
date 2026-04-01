@@ -42,4 +42,13 @@ def setup(channel):
         routing_key="payment.*"
     )
 
+    # notif.offer: receives offer.created, offer.countered, offer.accepted, offer.rejected events
+    # binding key "offer.*" matches any routing key starting with "offer."
+    channel.queue_declare(queue="notif.offer", durable=True)
+    channel.queue_bind(
+        exchange="market.events",
+        queue="notif.offer",
+        routing_key="offer.*"
+    )
+
     print("AMQP setup complete: dispatch_notification queues declared")

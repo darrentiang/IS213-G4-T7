@@ -268,7 +268,7 @@ services:
       - RABBITMQ_PORT=5672
       - USER_SERVICE_URL=http://user:5004
       - LISTING_SERVICE_URL=http://listing:5001
-      - NOTIFICATION_SERVICE_URL=http://notification:5006
+      - NOTIFICATION_SERVICE_URL=https://personal-1hkpzqtq.outsystemscloud.com/NotificationService/rest/NotificationApi/notifications
       - PYTHONUNBUFFERED=1
     depends_on:
       rabbitmq:

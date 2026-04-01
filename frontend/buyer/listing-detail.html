@@ -362,9 +362,11 @@
 
                 // Find active offer (not CANCELLED or REJECTED)
                 const activeOffer = offers.find(o => !["CANCELLED", "REJECTED"].includes(o.status));
+                // Find cancelled offer for history display
+                const cancelledOffer = !activeOffer ? offers.find(o => o.status === "CANCELLED") : null;
 
-                if (!activeOffer) {
-                    // No active offer — show form only if listing is still active
+                if (!activeOffer && !cancelledOffer) {
+                    // No offers at all — show form only if listing is still active
                     if (currentListing.status === "ACTIVE") {
                         document.getElementById("offer-form-section").style.display = "";
                     }
@@ -372,33 +374,42 @@
                     return;
                 }
 
-                // Has active offer — show status instead of form
-                document.getElementById("offer-form-section").style.display = "none";
+                // Show the active offer, or the cancelled offer as history
+                const displayOffer = activeOffer || cancelledOffer;
+
+                // Active offer hides the form; cancelled offer allows a new offer
+                if (activeOffer) {
+                    document.getElementById("offer-form-section").style.display = "none";
+                } else if (currentListing.status === "ACTIVE") {
+                    document.getElementById("offer-form-section").style.display = "";
+                }
                 document.getElementById("offer-status-section").style.display = "";
 
-                const statusBadge = `<span class="badge ${offerBadgeClass(activeOffer.status)}">${offerLabel(activeOffer.status)}</span>`;
+                const statusBadge = `<span class="badge ${offerBadgeClass(displayOffer.status)}">${offerLabel(displayOffer.status)}</span>`;
 
                 let content = `
                     <div class="form-section">
                         <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="fw-medium">Your offer: ${formatPrice(activeOffer.amount)}</span>
+                            <span class="fw-medium">Your offer: ${formatPrice(displayOffer.amount)}</span>
                             ${statusBadge}
                         </div>`;
 
-                if (activeOffer.status === "COUNTERED" && activeOffer.turn === "BUYER") {
+                if (displayOffer.status === "CANCELLED") {
+                    content += `<p class="text-muted mb-0" style="font-size: 0.85rem;">Payment failed. Your offer was cancelled. You may submit a new offer.</p>`;
+                } else if (displayOffer.status === "COUNTERED" && displayOffer.turn === "BUYER") {
                     content += `
                         <p class="text-muted mb-2" style="font-size: 0.85rem;">
-                            The seller countered with <strong>${formatPrice(activeOffer.amount)}</strong>.
+                            The seller countered with <strong>${formatPrice(displayOffer.amount)}</strong>.
                         </p>
                         <div class="d-flex gap-2">
-                            <button class="btn btn-dark btn-sm" onclick="acceptOffer(${activeOffer.offerId})">Accept Counter</button>
-                            <button class="btn btn-outline-secondary btn-sm" onclick="rejectOffer(${activeOffer.offerId})">Reject</button>
+                            <button class="btn btn-dark btn-sm" onclick="acceptOffer(${displayOffer.offerId})">Accept Counter</button>
+                            <button class="btn btn-outline-secondary btn-sm" onclick="rejectOffer(${displayOffer.offerId})">Reject</button>
                         </div>`;
-                } else if (activeOffer.status === "COUNTERED" && activeOffer.turn === "SELLER") {
+                } else if (displayOffer.status === "COUNTERED" && displayOffer.turn === "SELLER") {
                     content += `<p class="text-muted mb-0" style="font-size: 0.85rem;">Waiting for seller to respond...</p>`;
-                } else if (activeOffer.status === "PENDING") {
+                } else if (displayOffer.status === "PENDING") {
                     content += `<p class="text-muted mb-0" style="font-size: 0.85rem;">Waiting for seller to respond...</p>`;
-                } else if (activeOffer.status === "ACCEPTED") {
+                } else if (displayOffer.status === "ACCEPTED") {
                     content += `<p class="text-muted mb-0" style="font-size: 0.85rem;">Your offer was accepted! Payment will be processed.</p>`;
                 }
 

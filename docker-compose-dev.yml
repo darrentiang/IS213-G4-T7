@@ -368,6 +368,31 @@ services:
       - bidboard-net
 
   ####################################
+  # Process Payment: composite (consumer only)
+  ####################################
+  process-payment:
+    build:
+      context: ./services/process_payment
+      dockerfile: Dockerfile
+    container_name: process-payment
+    restart: always
+    environment:
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - USER_SERVICE_URL=http://user:5004
+      - PAYMENT_SERVICE_URL=http://payment:5005
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      rabbitmq:
+        condition: service_started
+      user:
+        condition: service_started
+      payment:
+        condition: service_started
+    networks:
+      - bidboard-net
+
+  ####################################
   # Frontend: Nginx (port 8080)
   ####################################
   frontend:

@@ -4,6 +4,9 @@ from flask import Flask
 from flask_cors import CORS
 from app.db import db
 from app.routes import offer_bp
+from app.amqp_lib import connect, close
+from app import amqp_setup
+from app.consumer import start_consumer
 
 app = Flask(__name__)
 
@@ -17,5 +20,17 @@ CORS(app)
 
 app.register_blueprint(offer_bp)
 
+# declare exchanges/queues on startup, then close (no persistent publisher connection)
+amqp_host = environ.get("RABBITMQ_HOST") or "localhost"
+amqp_port = int(environ.get("RABBITMQ_PORT") or 5672)
+
+connection, channel = connect(amqp_host, amqp_port)
+amqp_setup.setup(channel)
+close(connection, channel)
+print("AMQP setup done, publisher connection closed (will open fresh per request)")
+
+# start payment.failed consumer in background thread
+start_consumer(app)
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5003, debug=True)
+    app.run(host='0.0.0.0', port=5003, debug=True, use_reloader=False)

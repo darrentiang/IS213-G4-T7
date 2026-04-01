@@ -1,9 +1,95 @@
 _format_version: "3.0"
+plugins:
+- config:
+    credentials: false
+    exposed_headers: null
+    headers:
+    - Content-Type
+    max_age: null
+    methods:
+    - GET
+    - HEAD
+    - PUT
+    - PATCH
+    - POST
+    - DELETE
+    - OPTIONS
+    - TRACE
+    - CONNECT
+    origins:
+    - '*'
+    preflight_continue: false
+    private_network: false
+  enabled: false
+  name: cors
+  protocols:
+  - grpc
+  - grpcs
+  - http
+  - https
+- config:
+    ai_metrics: true
+    bandwidth_metrics: true
+    latency_metrics: true
+    per_consumer: true
+    status_code_metrics: true
+    upstream_health_metrics: true
+  enabled: true
+  name: prometheus
+  protocols:
+  - grpc
+  - grpcs
+  - http
+  - https
+- config:
+    day: null
+    error_code: 429
+    error_message: API rate limit exceeded
+    fault_tolerant: true
+    header_name: X-Buyer-Id
+    hide_client_headers: false
+    hour: null
+    limit_by: header
+    minute: 5
+    month: null
+    path: null
+    policy: local
+    redis:
+      database: 0
+      host: null
+      password: null
+      port: 6379
+      server_name: null
+      ssl: false
+      ssl_verify: false
+      timeout: 2000
+      username: null
+    redis_database: 0
+    redis_host: null
+    redis_password: null
+    redis_port: 6379
+    redis_server_name: null
+    redis_ssl: false
+    redis_ssl_verify: false
+    redis_timeout: 2000
+    redis_username: null
+    second: null
+    sync_rate: -1
+    year: null
+  enabled: true
+  name: rate-limiting
+  protocols:
+  - grpc
+  - grpcs
+  - http
+  - https
+  route: bid
+  service: bid
 services:
 - connect_timeout: 60000
+  enabled: true
   host: bid
   name: bid
-  path: /bids
   port: 5002
   protocol: http
   read_timeout: 60000
@@ -37,9 +123,9 @@ services:
     strip_path: true
   write_timeout: 60000
 - connect_timeout: 60000
+  enabled: true
   host: listing
   name: listing
-  path: /listings
   port: 5001
   protocol: http
   read_timeout: 60000
@@ -60,9 +146,9 @@ services:
     strip_path: true
   write_timeout: 60000
 - connect_timeout: 60000
+  enabled: true
   host: offer
   name: offer
-  path: /offers
   port: 5003
   protocol: http
   read_timeout: 60000
@@ -83,9 +169,9 @@ services:
     strip_path: true
   write_timeout: 60000
 - connect_timeout: 60000
+  enabled: true
   host: payment
   name: payment
-  path: /payments
   port: 5005
   protocol: http
   read_timeout: 60000
@@ -106,34 +192,9 @@ services:
     strip_path: true
   write_timeout: 60000
 - connect_timeout: 60000
-  host: ws-server
-  name: ws-server
-  path: /
-  port: 6000
-  protocol: http
-  read_timeout: 60000
-  retries: 0
-  routes:
-  - https_redirect_status_code: 426
-    name: ws-bids
-    path_handling: v0
-    paths:
-    - /ws
-    preserve_host: false
-    protocols:
-    - http
-    - https
-    - ws
-    - wss
-    regex_priority: 0
-    request_buffering: false
-    response_buffering: false
-    strip_path: true
-  write_timeout: 60000
-- connect_timeout: 60000
+  enabled: true
   host: user
   name: user
-  path: /users
   port: 5004
   protocol: http
   read_timeout: 60000

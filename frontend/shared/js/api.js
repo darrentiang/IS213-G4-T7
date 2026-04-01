@@ -4,8 +4,12 @@
  */
 
 async function apiFetch(url, options = {}) {
+    const buyerId = parseInt(localStorage.getItem("buyerId")) || 2;
     const defaults = {
-        headers: { "Content-Type": "application/json" },
+        headers: {
+            "Content-Type": "application/json",
+            "X-Buyer-Id": String(buyerId),
+        },
     };
     const res = await fetch(url, { ...defaults, ...options });
     const json = await res.json();

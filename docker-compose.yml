@@ -13,6 +13,8 @@ volumes:
     name: bidboard_payment_db_data
   pgdata:
     name: bidboard_pgdata
+  grafana_data:
+    name: bidboard_grafana_data
 
 networks:
   bidboard-net:
@@ -365,6 +367,41 @@ services:
         condition: service_started
       bid:
         condition: service_started
+    networks:
+      - bidboard-net
+
+  ####################################
+  # Prometheus: metrics collector (port 9091)
+  ####################################
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    restart: always
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./kong/prometheus.yml:/etc/prometheus/prometheus.yml
+    depends_on:
+      - kong
+    networks:
+      - bidboard-net
+
+  ####################################
+  # Grafana: metrics dashboard (port 13000)
+  ####################################
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: always
+    ports:
+      - "13000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./kong/grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      - prometheus
     networks:
       - bidboard-net
 

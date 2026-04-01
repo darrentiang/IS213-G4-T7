@@ -1,10 +1,23 @@
 # defines the API endpoints (HTTP routes)
 
+from os import environ
 from flask import Blueprint, request, jsonify
 from app.db import db
 from app.models import Offer
+from app.amqp_lib import connect, close, publish_message
 
 offer_bp = Blueprint('offer', __name__)
+
+
+def _amqp_publish(publish_fn):
+    """Open a fresh AMQP connection, run publish_fn(channel), then close."""
+    amqp_host = environ.get("RABBITMQ_HOST") or "localhost"
+    amqp_port = int(environ.get("RABBITMQ_PORT") or 5672)
+    connection, channel = connect(amqp_host, amqp_port)
+    try:
+        publish_fn(channel)
+    finally:
+        close(connection, channel)
 
 @offer_bp.route("/offers")
 def get_offers():
@@ -54,11 +67,22 @@ def create_offer():
         db.session.add(offer)
         db.session.commit()
 
+        try:
+            _amqp_publish(lambda ch: publish_message(ch, "market.events", "offer.created", {
+                "offerId": offer.offer_id,
+                "listingId": offer.listing_id,
+                "buyerId": offer.buyer_id,
+                "sellerId": offer.seller_id,
+                "amount": float(offer.amount)
+            }))
+        except Exception as amqp_err:
+            print(f"Failed to publish offer.created: {amqp_err}")
+
         return jsonify({
             "code": 201,
             "data": offer.json()
         }), 201
-    
+
     except Exception as e:
         return jsonify({
             "code": 500,
@@ -115,11 +139,22 @@ def counter_offer(offer_id):
         offer.turn = "BUYER"
         db.session.commit()
 
+        try:
+            _amqp_publish(lambda ch: publish_message(ch, "market.events", "offer.countered", {
+                "offerId": offer.offer_id,
+                "listingId": offer.listing_id,
+                "buyerId": offer.buyer_id,
+                "sellerId": offer.seller_id,
+                "amount": float(offer.amount)
+            }))
+        except Exception as amqp_err:
+            print(f"Failed to publish offer.countered: {amqp_err}")
+
         return jsonify({
             "code": 200,
             "data": offer.json()
-        }), 200 
-        
+        }), 200
+
     except Exception as e:
         return jsonify({
             "code": 500,
@@ -142,18 +177,29 @@ def accept_offer(offer_id):
             offer.turn = None
             db.session.commit()
 
+            try:
+                _amqp_publish(lambda ch: publish_message(ch, "market.events", "offer.accepted", {
+                    "offerId": offer.offer_id,
+                    "listingId": offer.listing_id,
+                    "buyerId": offer.buyer_id,
+                    "sellerId": offer.seller_id,
+                    "amount": float(offer.amount)
+                }))
+            except Exception as amqp_err:
+                print(f"Failed to publish offer.accepted: {amqp_err}")
+
             return jsonify({
                 "code": 200,
                 "data": offer.json()
-            }), 200 
-        
+            }), 200
+
         return jsonify({
             "code": 400,
             "message": "Invalid state for accepting offer.",
             "status": offer.status,
             "turn": offer.turn
         }), 400
-            
+
     except Exception as e:
         return jsonify({
             "code": 500,
@@ -175,11 +221,21 @@ def reject_offer(offer_id):
             offer.turn = None
             db.session.commit()
 
+            try:
+                _amqp_publish(lambda ch: publish_message(ch, "market.events", "offer.rejected", {
+                    "offerId": offer.offer_id,
+                    "listingId": offer.listing_id,
+                    "buyerId": offer.buyer_id,
+                    "sellerId": offer.seller_id
+                }))
+            except Exception as amqp_err:
+                print(f"Failed to publish offer.rejected: {amqp_err}")
+
             return jsonify({
                 "code": 200,
                 "data": offer.json()
-            }), 200 
-        
+            }), 200
+
         return jsonify({
             "code": 400,
             "message": "Invalid state for rejecting the offer.",
@@ -191,4 +247,4 @@ def reject_offer(offer_id):
         return jsonify({
             "code": 500,
             "message": "An error occurred rejecting the offer." + str(e)
-        }), 500 
+        }), 500

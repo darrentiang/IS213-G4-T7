@@ -76,6 +76,8 @@ services:
       KONG_ADMIN_ERROR_LOG: /dev/stderr
       KONG_ADMIN_LISTEN: 0.0.0.0:8001
       KONG_ADMIN_GUI_URL: ${KONG_MANAGER_URL:-http://localhost:8002}
+      KONG_DNS_STALE_TTL: 3600
+      KONG_DNS_ORDER: LAST,A,SRV,CNAME
     depends_on:
       - kong-migration
     ports:
@@ -329,9 +331,14 @@ services:
       - "5003:5003"
     environment:
       - dbURL=mysql+mysqlconnector://root:root@offer-db:3306/offer_db
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - PYTHONUNBUFFERED=1
     depends_on:
       offer-db:
         condition: service_healthy
+      rabbitmq:
+        condition: service_started
     networks:
       - bidboard-net
 

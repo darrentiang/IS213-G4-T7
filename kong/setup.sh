@@ -18,6 +18,7 @@ curl -s -X POST "$KONG_ADMIN/services" -d "name=bid" -d "url=http://bid:5002/bid
 curl -s -X POST "$KONG_ADMIN/services" -d "name=offer" -d "url=http://offer:5003/offers" > /dev/null
 curl -s -X POST "$KONG_ADMIN/services" -d "name=payment" -d "url=http://payment:5005/payments" > /dev/null
 curl -s -X POST "$KONG_ADMIN/services" -d "name=user" -d "url=http://user:5004/users" > /dev/null
+curl -s -X POST "$KONG_ADMIN/services" -d "name=ws-server" -d "url=http://ws-server:6000/" > /dev/null
 
 # ── Routes ──
 echo "Creating routes..."
@@ -27,6 +28,7 @@ curl -s -X POST "$KONG_ADMIN/services/bid/routes" -d "name=ranked_bids" -d "path
 curl -s -X POST "$KONG_ADMIN/services/offer/routes" -d "name=offer" -d "paths[]=/offers" -d "strip_path=true" > /dev/null
 curl -s -X POST "$KONG_ADMIN/services/payment/routes" -d "name=payment" -d "paths[]=/payments" -d "strip_path=true" > /dev/null
 curl -s -X POST "$KONG_ADMIN/services/user/routes" -d "name=user" -d "paths[]=/users" -d "strip_path=true" > /dev/null
+curl -s -X POST "$KONG_ADMIN/services/ws-server/routes" -d "name=ws-bids" -d "paths[]=/ws" -d "strip_path=true" -d "protocols[]=http" -d "protocols[]=https" -d "protocols[]=ws" -d "protocols[]=wss" > /dev/null
 
 # ── Global CORS plugin ──
 echo "Enabling global CORS plugin..."

@@ -106,6 +106,31 @@ services:
     strip_path: true
   write_timeout: 60000
 - connect_timeout: 60000
+  host: ws-server
+  name: ws-server
+  path: /
+  port: 6000
+  protocol: http
+  read_timeout: 60000
+  retries: 0
+  routes:
+  - https_redirect_status_code: 426
+    name: ws-bids
+    path_handling: v0
+    paths:
+    - /ws
+    preserve_host: false
+    protocols:
+    - http
+    - https
+    - ws
+    - wss
+    regex_priority: 0
+    request_buffering: false
+    response_buffering: false
+    strip_path: true
+  write_timeout: 60000
+- connect_timeout: 60000
   host: user
   name: user
   path: /users

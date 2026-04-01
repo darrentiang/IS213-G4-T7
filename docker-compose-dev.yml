@@ -393,6 +393,29 @@ services:
       - bidboard-net
 
   ####################################
+  # WebSocket Server: consumer + WS (port 6000)
+  ####################################
+  ws-server:
+    build:
+      context: ./services/ws_server
+      dockerfile: Dockerfile
+    container_name: ws-server
+    restart: always
+    ports:
+      - "6000:6000"
+    environment:
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      rabbitmq:
+        condition: service_started
+      bid:
+        condition: service_started
+    networks:
+      - bidboard-net
+
+  ####################################
   # Frontend: Nginx (port 8080)
   ####################################
   frontend:

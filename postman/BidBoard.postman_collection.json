@@ -1,0 +1,356 @@
+{
+	"info": {
+		"name": "BidBoard API",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8000"
+		}
+	],
+	"item": [
+		{
+			"name": "Listing Service",
+			"item": [
+				{
+					"name": "Get All Listings",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/listings",
+							"host": ["{{baseUrl}}"],
+							"path": ["listings"]
+						}
+					}
+				},
+				{
+					"name": "Get Listing by ID",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/listings/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["listings", "1"]
+						}
+					}
+				},
+				{
+					"name": "Create Listing (Auction)",
+					"request": {
+						"method": "POST",
+						"url": {
+							"raw": "{{baseUrl}}/listings",
+							"host": ["{{baseUrl}}"],
+							"path": ["listings"]
+						},
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"sellerId\": 1,\n    \"title\": \"Test Auction\",\n    \"description\": \"Test auction listing\",\n    \"listingType\": \"AUCTION\",\n    \"startPrice\": 5.00,\n    \"startTime\": \"2026-04-01T12:00:00\",\n    \"endTime\": \"2026-04-01T12:05:00\"\n}"
+						}
+					}
+				},
+				{
+					"name": "Create Listing (Fixed)",
+					"request": {
+						"method": "POST",
+						"url": {
+							"raw": "{{baseUrl}}/listings",
+							"host": ["{{baseUrl}}"],
+							"path": ["listings"]
+						},
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"sellerId\": 1,\n    \"title\": \"Test Fixed Listing\",\n    \"description\": \"Test fixed price listing\",\n    \"listingType\": \"FIXED\",\n    \"startPrice\": 50.00\n}"
+						}
+					}
+				},
+				{
+					"name": "Update Listing Status",
+					"request": {
+						"method": "PATCH",
+						"url": {
+							"raw": "{{baseUrl}}/listings/1/status",
+							"host": ["{{baseUrl}}"],
+							"path": ["listings", "1", "status"]
+						},
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"ACTIVE\"\n}"
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Bid Service",
+			"item": [
+				{
+					"name": "Get Bids by Listing",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/bids?listingId=1",
+							"host": ["{{baseUrl}}"],
+							"path": ["bids"],
+							"query": [
+								{
+									"key": "listingId",
+									"value": "1"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Place Bid",
+					"request": {
+						"method": "POST",
+						"url": {
+							"raw": "{{baseUrl}}/bids",
+							"host": ["{{baseUrl}}"],
+							"path": ["bids"]
+						},
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"listingId\": 1,\n    \"buyerId\": 2,\n    \"amount\": 10.00\n}"
+						}
+					}
+				},
+				{
+					"name": "Get Highest Bid",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/bids/highest/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["bids", "highest", "1"]
+						}
+					}
+				},
+				{
+					"name": "Close Auction (Ranked Bids)",
+					"request": {
+						"method": "POST",
+						"url": {
+							"raw": "{{baseUrl}}/auctions/1/close",
+							"host": ["{{baseUrl}}"],
+							"path": ["auctions", "1", "close"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Offer Service",
+			"item": [
+				{
+					"name": "Get Offers (by listingId)",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/offers?listingId=1",
+							"host": ["{{baseUrl}}"],
+							"path": ["offers"],
+							"query": [
+								{
+									"key": "listingId",
+									"value": "1"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Offers (by buyerId)",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/offers?buyerId=2",
+							"host": ["{{baseUrl}}"],
+							"path": ["offers"],
+							"query": [
+								{
+									"key": "buyerId",
+									"value": "2"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Offers (by listingId + buyerId)",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/offers?listingId=1&buyerId=2",
+							"host": ["{{baseUrl}}"],
+							"path": ["offers"],
+							"query": [
+								{
+									"key": "listingId",
+									"value": "1"
+								},
+								{
+									"key": "buyerId",
+									"value": "2"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Create Offer",
+					"request": {
+						"method": "POST",
+						"url": {
+							"raw": "{{baseUrl}}/offers",
+							"host": ["{{baseUrl}}"],
+							"path": ["offers"]
+						},
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"listingId\": 1,\n    \"buyerId\": 2,\n    \"sellerId\": 1,\n    \"amount\": 40.00\n}"
+						}
+					}
+				},
+				{
+					"name": "Counter Offer",
+					"request": {
+						"method": "PATCH",
+						"url": {
+							"raw": "{{baseUrl}}/offers/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["offers", "1"]
+						},
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"amount\": 45.00\n}"
+						}
+					}
+				},
+				{
+					"name": "Accept Offer",
+					"request": {
+						"method": "POST",
+						"url": {
+							"raw": "{{baseUrl}}/offers/1/accept",
+							"host": ["{{baseUrl}}"],
+							"path": ["offers", "1", "accept"]
+						}
+					}
+				},
+				{
+					"name": "Reject Offer",
+					"request": {
+						"method": "POST",
+						"url": {
+							"raw": "{{baseUrl}}/offers/1/reject",
+							"host": ["{{baseUrl}}"],
+							"path": ["offers", "1", "reject"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "User Service",
+			"item": [
+				{
+					"name": "Get User by ID",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/users/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["users", "1"]
+						}
+					}
+				},
+				{
+					"name": "Create User",
+					"request": {
+						"method": "POST",
+						"url": {
+							"raw": "{{baseUrl}}/users",
+							"host": ["{{baseUrl}}"],
+							"path": ["users"]
+						},
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"test@example.com\",\n    \"name\": \"Test User\",\n    \"stripeId\": \"cus_test123\"\n}"
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Payment Service",
+			"item": [
+				{
+					"name": "Charge Payment",
+					"request": {
+						"method": "POST",
+						"url": {
+							"raw": "{{baseUrl}}/payments/charge",
+							"host": ["{{baseUrl}}"],
+							"path": ["payments", "charge"]
+						},
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"listingId\": 1,\n    \"buyerId\": 2,\n    \"amount\": 10.00,\n    \"stripeId\": \"cus_UFTMQiGA5lpook\",\n    \"listingType\": \"AUCTION\",\n    \"idempotencyKey\": \"test_1_2\"\n}"
+						}
+					}
+				}
+			]
+		}
+	]
+}

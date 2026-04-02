@@ -63,7 +63,7 @@
         async function loadOffers() {
             try {
                 const result = await apiFetch(`${CONFIG.OFFER_API}/offers?buyerId=${CONFIG.BUYER_ID}`);
-                const offers = result.offers || [];
+                const offers = (result.offers || []).sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
 
                 document.getElementById("loading").style.display = "none";
 

@@ -278,7 +278,7 @@
         async function loadOffers() {
             try {
                 const result = await apiFetch(`${CONFIG.OFFER_API}/offers?listingId=${listingId}`);
-                const offers = result.offers || [];
+                const offers = (result.offers || []).sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
 
                 if (offers.length === 0) {
                     document.getElementById("offers-empty").style.display = "block";

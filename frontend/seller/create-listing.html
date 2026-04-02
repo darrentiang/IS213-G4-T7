@@ -192,9 +192,8 @@
             return { startDate, endDate };
         }
 
-        function sgtToUtc(datetimeLocalValue) {
-            const localDate = new Date(datetimeLocalValue);
-            return `${localDate.getUTCFullYear()}-${pad(localDate.getUTCMonth() + 1)}-${pad(localDate.getUTCDate())}T${pad(localDate.getUTCHours())}:${pad(localDate.getUTCMinutes())}:${pad(localDate.getUTCSeconds())}`;
+        function dateToUtc(d) {
+            return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}T${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`;
         }
 
         // ── Form submission ──
@@ -225,8 +224,8 @@
                     return;
                 }
 
-                startTimeStr = sgtToUtc(toLocalStr(startDate));
-                endTimeStr = sgtToUtc(toLocalStr(endDate));
+                startTimeStr = dateToUtc(startDate);
+                endTimeStr = dateToUtc(endDate);
             }
 
             submitBtn.disabled = true;

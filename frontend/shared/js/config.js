@@ -15,7 +15,7 @@ const CONFIG = {
 
     // Available buyer accounts for the switcher
     BUYERS: [
-        { id: 2, name: "Bob Lim" },
-        { id: 3, name: "Charlie Ng" },
+        { id: 2, name: "Bob Lim", color: "user-avatar-blue" },
+        { id: 3, name: "Charlie Ng", color: "user-avatar-purple" },
     ],
 };

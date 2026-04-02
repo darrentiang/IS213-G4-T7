@@ -168,9 +168,6 @@
                             <div class="d-flex justify-content-between mb-2">${typeBadge} ${statusBadge}</div>
                             <h5 class="card-title">${listing.title}</h5>
                             <p class="card-text price-tag${listing.status === 'SOLD' ? ' price-sold' : ''}">${priceLabel}</p>
-                            <div class="d-flex justify-content-end mt-auto">
-                                <button class="btn btn-link p-0 text-danger fw-bold" style="text-decoration: none;" onclick="event.stopPropagation(); deleteListing(${listing.listingId})">X</button>
-                            </div>
                         </div>
                     </div>
                 </div>

@@ -29,10 +29,7 @@
 
             <div class="page-header">
                 <h2>Listing Detail</h2>
-                <div class="d-flex gap-2">
-                    <button class="btn btn-link p-0 text-danger fw-bold" style="text-decoration: none;" onclick="deleteListing()">X</button>
-                    <a href="/seller/" class="btn-action">My Listings</a>
-                </div>
+                <a href="/seller/" class="btn-action">My Listings</a>
             </div>
 
             <!-- Listing header -->
@@ -47,6 +44,7 @@
                     <p id="listing-description" class="detail-description"></p>
                     <div id="listing-price" class="detail-price-section"></div>
                     <div id="listing-times" class="detail-times"></div>
+                    <button id="delete-btn" class="btn-delete" style="display: none; margin-top: 0.75rem;" onclick="deleteListing()">Delete Listing</button>
                 </div>
             </div>
 
@@ -189,6 +187,9 @@
                     document.getElementById("fixed-section").style.display = "block";
                     loadOffers();
                 }
+
+                // Show/hide delete button based on status
+                document.getElementById("delete-btn").style.display = "";
 
                 // Show content
                 document.getElementById("loading").style.display = "none";

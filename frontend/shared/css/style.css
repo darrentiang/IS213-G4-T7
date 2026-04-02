@@ -75,6 +75,25 @@ body {
     color: #fff;
 }
 
+/* ── Delete button ── */
+.btn-delete {
+    font-size: 0.78rem;
+    font-weight: 500;
+    padding: 0.3rem 0.85rem;
+    border: 1px solid #dc2626;
+    border-radius: 20px;
+    background-color: rgba(220, 38, 38, 0.06);
+    color: #dc2626;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    line-height: 1.4;
+}
+
+.btn-delete:hover {
+    background-color: #dc2626;
+    color: #fff;
+}
+
 /* ── Filter buttons ── */
 .filter-tabs {
     display: flex;

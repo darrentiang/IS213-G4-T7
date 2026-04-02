@@ -506,6 +506,16 @@ body {
     border-color: #333;
 }
 
+.btn.btn-dark.btn-sm,
+.btn.btn-outline-secondary.btn-sm {
+    font-size: 0.8rem;
+    font-weight: 500;
+    padding: 0.3rem 0.75rem;
+    border-radius: 6px;
+    min-width: 5rem;
+    text-align: center;
+}
+
 .btn-outline-secondary {
     font-size: 0.85rem;
     font-weight: 500;

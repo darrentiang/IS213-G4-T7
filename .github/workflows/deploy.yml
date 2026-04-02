@@ -117,6 +117,7 @@ jobs:
           script: |
             cd ~/IS213-G4-T7
             git pull origin main
+            docker compose down -v
             docker compose pull
             docker compose up -d
             deck sync --state kong/kong.yaml --kong-addr http://localhost:8001

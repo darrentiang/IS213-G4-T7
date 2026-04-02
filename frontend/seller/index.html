@@ -60,6 +60,9 @@
                 const grid = document.getElementById("listings-grid");
 
                 loading.style.display = "none";
+                emptyState.style.display = "none";
+                grid.style.display = "none";
+                grid.innerHTML = "";
 
                 if (myListings.length === 0) {
                     emptyState.style.display = "block";

@@ -113,7 +113,7 @@ def handle_bid_placed(channel, method, properties, body):
             json={
                 "recipientEmail": email,
                 "subject": "You've been outbid!",
-                "body": f"Someone placed a higher bid of ${amount:.2f} on \"{_get_listing_title(listing_id)}\". Place a new bid to stay in the lead!"
+                "body": f"Someone placed a higher bid of ${amount:.2f} on '{_get_listing_title(listing_id)}'. Place a new bid to stay in the lead!"
             }
         )
         notif_response.raise_for_status()
@@ -167,12 +167,12 @@ def handle_listing_event(channel, method, properties, body):
             listing_title = f"listing #{listing_id}"
 
         subject = "Your auction has been scheduled!"
-        body_text = f"Your auction \"{listing_title}\" is scheduled to go live at {start_time}."
+        body_text = f"Your auction '{listing_title}' is scheduled to go live at {start_time}."
 
     elif routing_key == "listing.active":
         listing_title = _get_listing_title(listing_id)
         subject = "Your auction is now LIVE!"
-        body_text = f"Your auction \"{listing_title}\" is now active. Buyers can start placing bids!"
+        body_text = f"Your auction '{listing_title}' is now active. Buyers can start placing bids!"
 
     else:
         print(f"[{routing_key}] Unhandled listing event. Skipping.")
@@ -221,7 +221,7 @@ def handle_auction_no_eligible_bidders(channel, method, properties, body):
             json={
                 "recipientEmail": email,
                 "subject": "Auction ended — no eligible bidders",
-                "body": f"Your auction \"{_get_listing_title(listing_id)}\" has ended, but no bidders could complete payment. The listing has been marked as unsold."
+                "body": f"Your auction '{_get_listing_title(listing_id)}' has ended, but no bidders could complete payment. The listing has been marked as unsold."
             }
         )
         notif_response.raise_for_status()
@@ -275,10 +275,10 @@ def handle_payment_event(channel, method, properties, body):
     if routing_key == "payment.success":
         amount = message.get("amount", 0)
         subject = "Payment confirmed!"
-        body_text = f"Payment of ${amount:.2f} for \"{listing_title}\" was successful. Transaction complete!"
+        body_text = f"Payment of ${amount:.2f} for '{listing_title}' was successful. Transaction complete!"
     else:
         subject = "Payment failed"
-        body_text = f"Payment for \"{listing_title}\" has failed. Please contact support if you believe this is an error."
+        body_text = f"Payment for '{listing_title}' has failed. Please contact support if you believe this is an error."
 
     # send to each recipient
     for role, email in emails.items():
@@ -327,7 +327,7 @@ def handle_offer_event(channel, method, properties, body):
             return
         recipients = [("seller", email)]
         subject = f"You received an offer of ${amount:.2f}"
-        body_text = f"A buyer has made an offer of ${amount:.2f} on your listing \"{listing_title}\". Log in to accept, counter, or reject."
+        body_text = f"A buyer has made an offer of ${amount:.2f} on your listing '{listing_title}'. Log in to accept, counter, or reject."
 
     elif routing_key == "offer.countered":
         # Notify buyer: "Seller countered at $X"
@@ -339,7 +339,7 @@ def handle_offer_event(channel, method, properties, body):
             return
         recipients = [("buyer", email)]
         subject = f"Seller countered at ${amount:.2f}"
-        body_text = f"The seller has countered your offer on \"{listing_title}\" with ${amount:.2f}. Log in to accept or reject."
+        body_text = f"The seller has countered your offer on '{listing_title}' with ${amount:.2f}. Log in to accept or reject."
 
     elif routing_key == "offer.accepted":
         # Notify buyer: "Your offer has been accepted!"
@@ -351,7 +351,7 @@ def handle_offer_event(channel, method, properties, body):
             return
         recipients = [("buyer", email)]
         subject = "Your offer has been accepted!"
-        body_text = f"Your offer of ${amount:.2f} on \"{listing_title}\" has been accepted. Payment will be processed shortly."
+        body_text = f"Your offer of ${amount:.2f} on '{listing_title}' has been accepted. Payment will be processed shortly."
 
     elif routing_key == "offer.rejected":
         # Notify seller: "Buyer rejected your counter"
@@ -363,7 +363,7 @@ def handle_offer_event(channel, method, properties, body):
             return
         recipients = [("seller", email)]
         subject = "Buyer rejected your counter offer"
-        body_text = f"The buyer has rejected your counter offer on \"{listing_title}\". The offer has been closed."
+        body_text = f"The buyer has rejected your counter offer on '{listing_title}'. The offer has been closed."
 
     else:
         print(f"[{routing_key}] Unhandled offer event. Skipping.")

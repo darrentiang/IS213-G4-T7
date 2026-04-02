@@ -26,10 +26,20 @@ body {
 }
 
 .navbar .navbar-brand {
-    font-weight: 600;
-    font-size: 1.1rem;
-    letter-spacing: -0.01em;
-    color: var(--bb-nav-text) !important;
+    font-weight: 700;
+    font-size: 1.2rem;
+    letter-spacing: -0.02em;
+    text-decoration: none;
+    background: linear-gradient(135deg, #7c3aed, #3b82f6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    display: inline-flex;
+    align-items: center;
+}
+
+.navbar .navbar-brand i {
+    -webkit-text-fill-color: #7c3aed;
 }
 
 .navbar .navbar-text {
@@ -55,7 +65,7 @@ body {
     background: #fff;
     border: 1px solid var(--bb-border);
     border-radius: 8px;
-    padding: 0.3rem 0.6rem 0.3rem 0.35rem;
+    padding: 0.2rem 0.5rem 0.2rem 0.25rem;
     cursor: pointer;
     transition: all 0.15s ease;
     font-family: inherit;
@@ -67,12 +77,12 @@ body {
 }
 
 .user-avatar {
-    width: 26px;
-    height: 26px;
+    width: 22px;
+    height: 22px;
     border-radius: 50%;
     background-color: var(--bb-text);
     color: #fff;
-    font-size: 0.72rem;
+    font-size: 0.65rem;
     font-weight: 600;
     display: flex;
     align-items: center;
@@ -81,10 +91,16 @@ body {
 }
 
 .user-avatar-sm {
-    width: 22px;
-    height: 22px;
-    font-size: 0.65rem;
+    width: 20px;
+    height: 20px;
+    font-size: 0.6rem;
 }
+
+.user-avatar-blue { background-color: #3b82f6; }
+.user-avatar-purple { background-color: #7c3aed; }
+.user-avatar-teal { background-color: #0891b2; }
+.user-avatar-orange { background-color: #ea580c; }
+.user-avatar-green { background-color: #16a34a; }
 
 .user-name {
     font-size: 0.8rem;
@@ -178,6 +194,119 @@ body {
 .page-header .btn-action:hover {
     background-color: #333;
     color: #fff;
+}
+
+/* ── Listing type cards ── */
+.type-card {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 1.25rem 1rem;
+    border: 2px solid var(--bb-border);
+    border-radius: 10px;
+    background: #fff;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-align: center;
+}
+
+.type-card:hover {
+    border-color: #b0b4ba;
+}
+
+.type-card.selected {
+    border-color: var(--bb-text);
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+.type-card-auction.selected {
+    border-color: #7c3aed;
+    background-color: rgba(124, 58, 237, 0.04);
+}
+
+.type-card-fixed.selected {
+    border-color: #0891b2;
+    background-color: rgba(8, 145, 178, 0.04);
+}
+
+.type-card i {
+    font-size: 1.5rem;
+    color: var(--bb-text-secondary);
+    margin-bottom: 0.15rem;
+}
+
+.type-card-auction.selected i {
+    color: #7c3aed;
+}
+
+.type-card-fixed.selected i {
+    color: #0891b2;
+}
+
+.type-card-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--bb-text);
+}
+
+.type-card-desc {
+    font-size: 0.75rem;
+    color: var(--bb-text-secondary);
+    line-height: 1.3;
+}
+
+/* ── Preset pills ── */
+.preset-pills {
+    display: flex;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+}
+
+.preset-pill {
+    font-size: 0.78rem;
+    font-weight: 500;
+    padding: 0.3rem 0.8rem;
+    border: 1px solid var(--bb-border);
+    border-radius: 20px;
+    background: #fff;
+    color: var(--bb-text-secondary);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    line-height: 1.4;
+    font-family: inherit;
+}
+
+.preset-pill:hover {
+    border-color: var(--bb-text);
+    color: var(--bb-text);
+}
+
+.preset-pill.active {
+    background-color: var(--bb-text);
+    border-color: var(--bb-text);
+    color: #fff;
+}
+
+/* ── Schedule summary ── */
+.schedule-summary {
+    margin-top: 0.75rem;
+    font-size: 0.8rem;
+    color: var(--bb-text-secondary);
+    padding: 0.5rem 0.75rem;
+    background-color: rgba(59, 130, 246, 0.04);
+    border-radius: 6px;
+    border: 1px solid rgba(59, 130, 246, 0.1);
+}
+
+.schedule-summary:empty {
+    display: none;
+}
+
+.schedule-summary i {
+    margin-right: 0.25rem;
+    color: #3b82f6;
 }
 
 /* ── Delete button ── */
@@ -630,6 +759,10 @@ body {
     padding: 0.5rem 1.25rem;
 }
 
+.btn-dark i {
+    margin-right: 0.25rem;
+}
+
 .btn-dark:hover {
     background-color: #333;
     border-color: #333;
@@ -744,9 +877,8 @@ body {
 
 /* ── Navbar icon ── */
 .navbar-brand i {
-    font-size: 0.95rem;
-    margin-right: 0.25rem;
-    vertical-align: -1px;
+    font-size: 1rem;
+    margin-right: 0.3rem;
 }
 
 /* ── Page header icon ── */

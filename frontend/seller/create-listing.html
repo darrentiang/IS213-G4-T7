@@ -14,7 +14,7 @@
     <nav class="navbar">
         <div class="container" style="position: relative;">
             <span class="navbar-text">Seller: <span id="navbar-user-name">Loading...</span></span>
-            <span class="navbar-brand" style="position: absolute; left: 50%; transform: translateX(-50%);"><i class="bi bi-hammer"></i> BidBoard</span>
+            <a href="/seller/" class="navbar-brand" style="position: absolute; left: 50%; transform: translateX(-50%);"><i class="bi bi-lightning-charge-fill"></i> BidBoard</a>
         </div>
     </nav>
 
@@ -29,18 +29,19 @@
 
         <form id="create-listing-form">
             <!-- Listing Type -->
-            <div class="form-section">
-                <label class="form-label fw-semibold">Listing Type</label>
-                <div class="d-flex gap-3">
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="listingType" id="type-auction" value="AUCTION" checked>
-                        <label class="form-check-label" for="type-auction">Timed Auction</label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="listingType" id="type-fixed" value="FIXED">
-                        <label class="form-check-label" for="type-fixed">Fixed Price</label>
-                    </div>
-                </div>
+            <div class="d-flex gap-3 mb-4">
+                <input type="radio" name="listingType" id="type-auction" value="AUCTION" checked class="d-none">
+                <label for="type-auction" class="type-card type-card-auction selected" id="card-auction">
+                    <i class="bi bi-clock-history"></i>
+                    <span class="type-card-title">Timed Auction</span>
+                    <span class="type-card-desc">Buyers bid, highest wins</span>
+                </label>
+                <input type="radio" name="listingType" id="type-fixed" value="FIXED" class="d-none">
+                <label for="type-fixed" class="type-card type-card-fixed" id="card-fixed">
+                    <i class="bi bi-tag"></i>
+                    <span class="type-card-title">Fixed Price</span>
+                    <span class="type-card-desc">Buyers make offers to negotiate</span>
+                </label>
             </div>
 
             <!-- Basic Info -->
@@ -58,27 +59,49 @@
                     <input type="url" class="form-control" id="imageUrl" placeholder="https://example.com/image.jpg">
                 </div>
                 <div class="mb-3">
-                    <label for="startPrice" class="form-label fw-semibold">Starting Price ($) <span class="text-danger">*</span></label>
+                    <label for="startPrice" class="form-label fw-semibold" id="price-label">Starting Price ($) <span class="text-danger">*</span></label>
                     <input type="number" class="form-control" id="startPrice" step="0.01" min="0.01" required placeholder="0.00">
                 </div>
             </div>
 
-            <!-- Auction Time Fields (shown only for AUCTION) -->
+            <!-- Auction Schedule (shown only for AUCTION) -->
             <div class="form-section" id="auction-fields">
-                <h6 class="fw-semibold mb-3">Auction Schedule</h6>
-                <p class="text-muted small mb-3">
-                    All times are in SGT (UTC+8).
-                </p>
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label for="startTime" class="form-label fw-semibold">Start Time (SGT) <span class="text-danger">*</span></label>
-                        <input type="datetime-local" class="form-control" id="startTime">
+                <h6 class="fw-semibold mb-3"><i class="bi bi-stopwatch" style="margin-right: 0.3rem;"></i> Auction Schedule</h6>
+
+                <!-- Starts in -->
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Starts in</label>
+                    <div class="preset-pills" id="start-presets">
+                        <button type="button" class="preset-pill active" data-minutes="1">1 min</button>
+                        <button type="button" class="preset-pill" data-minutes="5">5 min</button>
+                        <button type="button" class="preset-pill" data-minutes="15">15 min</button>
+                        <button type="button" class="preset-pill" data-minutes="30">30 min</button>
+                        <button type="button" class="preset-pill" data-custom="start">Custom</button>
                     </div>
-                    <div class="col-md-6 mb-3">
-                        <label for="endTime" class="form-label fw-semibold">End Time (SGT) <span class="text-danger">*</span></label>
-                        <input type="datetime-local" class="form-control" id="endTime">
+                    <div id="custom-start-wrapper" style="display: none; margin-top: 0.5rem;">
+                        <input type="datetime-local" class="form-control" id="startTime">
+                        <span class="form-text text-muted">SGT (UTC+8)</span>
                     </div>
                 </div>
+
+                <!-- Duration -->
+                <div class="mb-1">
+                    <label class="form-label fw-semibold">Duration</label>
+                    <div class="preset-pills" id="duration-presets">
+                        <button type="button" class="preset-pill active" data-minutes="1">1 min</button>
+                        <button type="button" class="preset-pill" data-minutes="3">3 min</button>
+                        <button type="button" class="preset-pill" data-minutes="15">15 min</button>
+                        <button type="button" class="preset-pill" data-minutes="60">1 hour</button>
+                        <button type="button" class="preset-pill" data-custom="end">Custom</button>
+                    </div>
+                    <div id="custom-end-wrapper" style="display: none; margin-top: 0.5rem;">
+                        <input type="datetime-local" class="form-control" id="endTime">
+                        <span class="form-text text-muted">SGT (UTC+8)</span>
+                    </div>
+                </div>
+
+                <!-- Summary line -->
+                <div id="schedule-summary" class="schedule-summary"></div>
             </div>
 
             <button type="submit" class="btn btn-dark btn-lg w-100" id="submit-btn">Create Listing</button>
@@ -89,69 +112,121 @@
     <script src="/shared/js/config.js"></script>
     <script src="/shared/js/api.js"></script>
     <script>
-        // Load seller name in navbar
         loadNavbarUser(CONFIG.SELLER_ID);
 
-        // Toggle auction fields based on listing type
-        const typeRadios = document.querySelectorAll('input[name="listingType"]');
-        const auctionFields = document.getElementById("auction-fields");
-        const startTimeInput = document.getElementById("startTime");
-        const endTimeInput = document.getElementById("endTime");
+        const pad = (n) => String(n).padStart(2, "0");
+        const toLocalStr = (d) =>
+            `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 
-        typeRadios.forEach(radio => {
+        // ── Listing type cards ──
+        const cardAuction = document.getElementById("card-auction");
+        const cardFixed = document.getElementById("card-fixed");
+        const auctionFields = document.getElementById("auction-fields");
+
+        document.querySelectorAll('input[name="listingType"]').forEach(radio => {
             radio.addEventListener("change", () => {
-                const isAuction = document.getElementById("type-auction").checked;
-                auctionFields.style.display = isAuction ? "block" : "none";
-                startTimeInput.required = isAuction;
-                endTimeInput.required = isAuction;
+                const isAuction = radio.value === "AUCTION" && radio.checked;
+                cardAuction.classList.toggle("selected", document.getElementById("type-auction").checked);
+                cardFixed.classList.toggle("selected", document.getElementById("type-fixed").checked);
+                auctionFields.style.display = document.getElementById("type-auction").checked ? "block" : "none";
+                document.getElementById("price-label").innerHTML = document.getElementById("type-auction").checked
+                    ? 'Starting Price ($) <span class="text-danger">*</span>'
+                    : 'Asking Price ($) <span class="text-danger">*</span>';
             });
         });
 
-        // Pre-populate times for demo convenience (SGT / local time)
-        function prefillTimes() {
-            const now = new Date();
-            const start = new Date(now.getTime() + 1 * 60 * 1000); // +1 min
-            const end = new Date(now.getTime() + 6 * 60 * 1000);   // +6 min
+        // ── Preset pill logic ──
+        let startPreset = 1;      // minutes from now, or null if custom
+        let durationPreset = 1;   // minutes, or null if custom
 
-            // Format as YYYY-MM-DDTHH:MM using local (SGT) time
-            const pad = (n) => String(n).padStart(2, "0");
-            const toLocalStr = (d) =>
-                `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-
-            startTimeInput.value = toLocalStr(start);
-            endTimeInput.value = toLocalStr(end);
+        function initPresets(containerId, wrapperId, onSelect) {
+            const container = document.getElementById(containerId);
+            container.querySelectorAll(".preset-pill").forEach(pill => {
+                pill.addEventListener("click", () => {
+                    container.querySelectorAll(".preset-pill").forEach(p => p.classList.remove("active"));
+                    pill.classList.add("active");
+                    const isCustom = pill.hasAttribute("data-custom");
+                    document.getElementById(wrapperId).style.display = isCustom ? "" : "none";
+                    onSelect(isCustom ? null : parseInt(pill.dataset.minutes));
+                });
+            });
         }
-        prefillTimes();
 
-        // Convert a datetime-local string (SGT) to UTC ISO string "YYYY-MM-DDTHH:MM:SS"
+        initPresets("start-presets", "custom-start-wrapper", (mins) => {
+            startPreset = mins;
+            updateSummary();
+        });
+
+        initPresets("duration-presets", "custom-end-wrapper", (mins) => {
+            durationPreset = mins;
+            updateSummary();
+        });
+
+        function updateSummary() {
+            const el = document.getElementById("schedule-summary");
+            if (startPreset !== null && durationPreset !== null) {
+                el.innerHTML = `<i class="bi bi-info-circle"></i> Auction starts in <strong>${startPreset} min</strong>, runs for <strong>${durationPreset} min</strong>`;
+            } else {
+                el.textContent = "";
+            }
+        }
+        updateSummary();
+
+        // ── Compute times at submit ──
+        function getAuctionTimes() {
+            let startDate, endDate;
+            const now = new Date();
+
+            if (startPreset !== null) {
+                startDate = new Date(now.getTime() + startPreset * 60 * 1000);
+            } else {
+                startDate = new Date(document.getElementById("startTime").value);
+            }
+
+            if (durationPreset !== null) {
+                endDate = new Date(startDate.getTime() + durationPreset * 60 * 1000);
+            } else {
+                endDate = new Date(document.getElementById("endTime").value);
+            }
+
+            return { startDate, endDate };
+        }
+
         function sgtToUtc(datetimeLocalValue) {
-            // datetime-local value is interpreted as local time by the Date constructor
             const localDate = new Date(datetimeLocalValue);
-            const pad = (n) => String(n).padStart(2, "0");
             return `${localDate.getUTCFullYear()}-${pad(localDate.getUTCMonth() + 1)}-${pad(localDate.getUTCDate())}T${pad(localDate.getUTCHours())}:${pad(localDate.getUTCMinutes())}:${pad(localDate.getUTCSeconds())}`;
         }
 
-        // Form submission
+        // ── Form submission ──
         document.getElementById("create-listing-form").addEventListener("submit", async (e) => {
             e.preventDefault();
 
             const submitBtn = document.getElementById("submit-btn");
             const listingType = document.querySelector('input[name="listingType"]:checked').value;
 
-            // Validation for auction times
+            let startTimeStr, endTimeStr;
             if (listingType === "AUCTION") {
-                const now = new Date();
-                const startLocal = new Date(startTimeInput.value);
-                const endLocal = new Date(endTimeInput.value);
+                const { startDate, endDate } = getAuctionTimes();
 
-                if (startLocal <= now) {
+                if (isNaN(startDate.getTime())) {
+                    showAlert("danger", "Please set a valid start time.");
+                    return;
+                }
+                if (isNaN(endDate.getTime())) {
+                    showAlert("danger", "Please set a valid end time.");
+                    return;
+                }
+                if (startDate <= new Date()) {
                     showAlert("danger", "Start time must be in the future.");
                     return;
                 }
-                if (endLocal <= startLocal) {
+                if (endDate <= startDate) {
                     showAlert("danger", "End time must be after the start time.");
                     return;
                 }
+
+                startTimeStr = sgtToUtc(toLocalStr(startDate));
+                endTimeStr = sgtToUtc(toLocalStr(endDate));
             }
 
             submitBtn.disabled = true;
@@ -167,8 +242,8 @@
             };
 
             if (listingType === "AUCTION") {
-                body.startTime = sgtToUtc(startTimeInput.value);
-                body.endTime = sgtToUtc(endTimeInput.value);
+                body.startTime = startTimeStr;
+                body.endTime = endTimeStr;
             }
 
             try {

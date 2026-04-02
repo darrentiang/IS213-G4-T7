@@ -56,6 +56,12 @@ async function loadNavbarUser(userId) {
  * Render a buyer switcher dropdown into #buyer-switcher.
  * Saves selection to localStorage and reloads the page.
  */
+const AVATAR_COLORS = ["user-avatar-blue", "user-avatar-purple", "user-avatar-teal", "user-avatar-orange", "user-avatar-green"];
+
+function avatarColor(id) {
+    return AVATAR_COLORS[id % AVATAR_COLORS.length];
+}
+
 function initBuyerSwitcher() {
     const container = document.getElementById("buyer-switcher");
     if (!container) return;
@@ -69,7 +75,7 @@ function initBuyerSwitcher() {
     // Toggle button
     const toggle = document.createElement("button");
     toggle.className = "user-switcher-toggle";
-    toggle.innerHTML = `<span class="user-avatar">${initial}</span><span class="user-name">${current.name}</span><i class="bi bi-chevron-down user-chevron"></i>`;
+    toggle.innerHTML = `<span class="user-avatar ${avatarColor(current.id)}">${initial}</span><span class="user-name">${current.name}</span><i class="bi bi-chevron-down user-chevron"></i>`;
 
     // Dropdown menu
     const menu = document.createElement("div");
@@ -79,7 +85,7 @@ function initBuyerSwitcher() {
         const item = document.createElement("button");
         item.className = "user-switcher-item" + (b.id === CONFIG.BUYER_ID ? " active" : "");
         const bInitial = b.name.charAt(0).toUpperCase();
-        item.innerHTML = `<span class="user-avatar user-avatar-sm">${bInitial}</span>${b.name}`;
+        item.innerHTML = `<span class="user-avatar user-avatar-sm ${avatarColor(b.id)}">${bInitial}</span>${b.name}`;
         item.addEventListener("click", () => {
             if (b.id !== CONFIG.BUYER_ID) {
                 localStorage.setItem("buyerId", b.id);

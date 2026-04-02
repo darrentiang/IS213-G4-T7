@@ -75,6 +75,37 @@ body {
     color: #fff;
 }
 
+/* ── Filter buttons ── */
+.filter-tabs {
+    display: flex;
+    gap: 0.4rem;
+    margin-bottom: 1.25rem;
+}
+
+.filter-tab {
+    font-size: 0.8rem;
+    font-weight: 500;
+    padding: 0.3rem 0.9rem;
+    border: 1px solid var(--bb-border);
+    border-radius: 20px;
+    background: #fff;
+    color: var(--bb-text-secondary);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    line-height: 1.4;
+}
+
+.filter-tab:hover {
+    border-color: var(--bb-text);
+    color: var(--bb-text);
+}
+
+.filter-tab.active {
+    background-color: var(--bb-text);
+    border-color: var(--bb-text);
+    color: #fff;
+}
+
 /* ── Listing cards ── */
 .listing-card {
     cursor: pointer;

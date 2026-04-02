@@ -22,6 +22,13 @@
             <a href="/seller/create-listing.html" class="btn-action">+ Create Listing</a>
         </div>
 
+        <!-- Filter buttons -->
+        <div class="filter-tabs">
+            <button class="filter-tab active" data-filter="all">All</button>
+            <button class="filter-tab" data-filter="AUCTION">Auctions</button>
+            <button class="filter-tab" data-filter="FIXED">Fixed</button>
+        </div>
+
         <!-- Loading spinner -->
         <div id="loading" class="text-center py-5">
             <div class="spinner-border text-secondary" role="status">
@@ -45,46 +52,64 @@
     <script>
         loadNavbarUser(CONFIG.SELLER_ID);
 
+        let allListings = [];
+        let currentFilter = "all";
+
+        // Filter tab clicks
+        document.querySelectorAll(".filter-tab").forEach(btn => {
+            btn.addEventListener("click", () => {
+                document.querySelectorAll(".filter-tab").forEach(b => b.classList.remove("active"));
+                btn.classList.add("active");
+                currentFilter = btn.dataset.filter;
+                renderListings();
+            });
+        });
+
         async function loadListings() {
             try {
                 const result = await apiFetch(`${CONFIG.LISTING_API}/listings`);
                 const listings = result.listings || [];
 
-                // Filter to only this seller's listings, newest first
-                const myListings = listings
-                    .filter(l => l.sellerId === CONFIG.SELLER_ID)
-                    .sort((a, b) => b.listingId - a.listingId);
+                // Filter to only this seller's listings
+                allListings = listings.filter(l => l.sellerId === CONFIG.SELLER_ID);
 
-                const loading = document.getElementById("loading");
-                const emptyState = document.getElementById("empty-state");
-                const grid = document.getElementById("listings-grid");
-
-                loading.style.display = "none";
-                emptyState.style.display = "none";
-                grid.style.display = "none";
-                grid.innerHTML = "";
-
-                if (myListings.length === 0) {
-                    emptyState.style.display = "block";
-                    return;
-                }
-
-                grid.style.display = "flex";
-                grid.innerHTML = myListings.map(listing => createListingCard(listing)).join("");
-
-                // If any listing has a stale status (should have transitioned), retry
-                const needsRefresh = myListings.some(l => {
-                    if (l.listingType !== "AUCTION" || !l.startTime || !l.endTime) return false;
-                    const s = parseUtcDate(l.startTime), e = parseUtcDate(l.endTime), now = new Date();
-                    return (l.status === "SCHEDULED" && s <= now) || (l.status === "ACTIVE" && e <= now);
-                });
-                if (needsRefresh) setTimeout(() => loadListings(), 5000);
+                document.getElementById("loading").style.display = "none";
+                renderListings();
 
             } catch (err) {
-                // If 404 (no listings), show empty state
                 document.getElementById("loading").style.display = "none";
                 document.getElementById("empty-state").style.display = "block";
             }
+        }
+
+        function renderListings() {
+            const grid = document.getElementById("listings-grid");
+            const emptyState = document.getElementById("empty-state");
+
+            const filtered = (currentFilter === "all"
+                ? allListings
+                : allListings.filter(l => l.listingType === currentFilter))
+                .sort((a, b) => b.listingId - a.listingId);
+
+            emptyState.style.display = "none";
+            grid.style.display = "none";
+            grid.innerHTML = "";
+
+            if (filtered.length === 0) {
+                emptyState.style.display = "block";
+                return;
+            }
+
+            grid.style.display = "flex";
+            grid.innerHTML = filtered.map(listing => createListingCard(listing)).join("");
+
+            // If any listing has a stale status (should have transitioned), retry
+            const needsRefresh = allListings.some(l => {
+                if (l.listingType !== "AUCTION" || !l.startTime || !l.endTime) return false;
+                const s = parseUtcDate(l.startTime), e = parseUtcDate(l.endTime), now = new Date();
+                return (l.status === "SCHEDULED" && s <= now) || (l.status === "ACTIVE" && e <= now);
+            });
+            if (needsRefresh) setTimeout(() => loadListings(), 5000);
         }
 
         function createListingCard(listing) {

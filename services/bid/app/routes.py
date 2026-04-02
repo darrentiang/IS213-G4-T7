@@ -99,6 +99,15 @@ def get_highest_bid(listing_id):
     return jsonify({"code": 404, "message": "No bids found for this listing."}), 404
 
 
+@bid_bp.route("/bids/listing/<int:listing_id>", methods=['DELETE'])
+def delete_bids_by_listing(listing_id):
+    bids = db.session.scalars(db.select(Bid).filter_by(listing_id=listing_id)).all()
+    for bid in bids:
+        db.session.delete(bid)
+    db.session.commit()
+    return jsonify({"code": 200, "message": f"Deleted {len(bids)} bid(s) for listing {listing_id}."}), 200
+
+
 @bid_bp.route("/auctions/<int:listing_id>/close", methods=['POST'])
 def get_ranked_bids(listing_id):
     bids = db.session.scalars(

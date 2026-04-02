@@ -30,7 +30,7 @@
             <div class="page-header">
                 <h2>Listing Detail</h2>
                 <div class="d-flex gap-2">
-                    <button class="btn btn-outline-danger btn-sm" onclick="deleteListing()">Delete Listing</button>
+                    <button class="btn btn-link p-0 text-danger fw-bold" style="text-decoration: none;" onclick="deleteListing()">X</button>
                     <a href="/seller/" class="btn-action">My Listings</a>
                 </div>
             </div>
@@ -358,6 +358,10 @@
         async function deleteListing() {
             if (!confirm("Are you sure you want to delete this listing? This cannot be undone.")) return;
             try {
+                await Promise.allSettled([
+                    apiFetch(`${CONFIG.BID_API}/bids/listing/${listingId}`, { method: "DELETE" }),
+                    apiFetch(`${CONFIG.OFFER_API}/offers/listing/${listingId}`, { method: "DELETE" })
+                ]);
                 await apiFetch(`${CONFIG.LISTING_API}/listings/${listingId}`, { method: "DELETE" });
                 window.location.href = "/seller/";
             } catch (err) {

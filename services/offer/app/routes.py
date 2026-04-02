@@ -248,3 +248,12 @@ def reject_offer(offer_id):
             "code": 500,
             "message": "An error occurred rejecting the offer." + str(e)
         }), 500
+
+
+@offer_bp.route("/offers/listing/<int:listing_id>", methods=['DELETE'])
+def delete_offers_by_listing(listing_id):
+    offers = db.session.scalars(db.select(Offer).filter_by(listing_id=listing_id)).all()
+    for offer in offers:
+        db.session.delete(offer)
+    db.session.commit()
+    return jsonify({"code": 200, "message": f"Deleted {len(offers)} offer(s) for listing {listing_id}."}), 200

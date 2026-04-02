@@ -57,7 +57,8 @@ services:
       KONG_PG_USER: kong
       KONG_PG_PASSWORD: password
     depends_on:
-      - kong-database
+      kong-database:
+        condition: service_healthy
 
   #######################################
   # Kong: The API Gateway

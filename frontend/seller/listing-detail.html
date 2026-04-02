@@ -29,7 +29,10 @@
 
             <div class="page-header">
                 <h2>Listing Detail</h2>
-                <a href="/seller/" class="btn-action">My Listings</a>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-danger btn-sm" onclick="deleteListing()">Delete Listing</button>
+                    <a href="/seller/" class="btn-action">My Listings</a>
+                </div>
             </div>
 
             <!-- Listing header -->
@@ -349,6 +352,16 @@
                 loadOffers();
             } catch (err) {
                 alert("Failed to counter: " + err.message);
+            }
+        }
+
+        async function deleteListing() {
+            if (!confirm("Are you sure you want to delete this listing? This cannot be undone.")) return;
+            try {
+                await apiFetch(`${CONFIG.LISTING_API}/listings/${listingId}`, { method: "DELETE" });
+                window.location.href = "/seller/";
+            } catch (err) {
+                alert("Failed to delete listing: " + err.message);
             }
         }
 

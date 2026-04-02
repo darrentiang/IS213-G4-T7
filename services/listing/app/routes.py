@@ -128,6 +128,21 @@ def get_listing(listing_id):
     return jsonify({"code": 404, "message": f"Listing {listing_id} not found."}), 404
 
 
+@listing_bp.route("/listings/<int:listing_id>", methods=['DELETE'])
+def delete_listing(listing_id):
+    listing = db.session.scalar(
+        db.select(Listing).filter_by(listing_id=listing_id)
+    )
+
+    if not listing:
+        return jsonify({"code": 404, "message": f"Listing {listing_id} not found."}), 404
+
+    db.session.delete(listing)
+    db.session.commit()
+
+    return jsonify({"code": 200, "message": f"Listing {listing_id} deleted."}), 200
+
+
 @listing_bp.route("/listings/<int:listing_id>/status", methods=['PATCH'])
 def update_listing_status(listing_id):
     try:

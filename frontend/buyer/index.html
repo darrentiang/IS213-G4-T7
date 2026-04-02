@@ -81,9 +81,10 @@
             const grid = document.getElementById("listings-grid");
             const emptyState = document.getElementById("empty-state");
 
-            const filtered = currentFilter === "all"
+            const filtered = (currentFilter === "all"
                 ? allListings
-                : allListings.filter(l => l.listingType === currentFilter);
+                : allListings.filter(l => l.listingType === currentFilter))
+                .sort((a, b) => b.listingId - a.listingId);
 
             if (filtered.length === 0) {
                 grid.style.display = "none";

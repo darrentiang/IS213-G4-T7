@@ -11,7 +11,7 @@
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     color: var(--bb-text);
     background-color: var(--bb-bg);
     -webkit-font-smoothing: antialiased;
@@ -43,6 +43,104 @@ body {
     font-weight: 500;
 }
 
+/* ── User switcher ── */
+.user-switcher {
+    position: relative;
+}
+
+.user-switcher-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    background: #fff;
+    border: 1px solid var(--bb-border);
+    border-radius: 8px;
+    padding: 0.3rem 0.6rem 0.3rem 0.35rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-family: inherit;
+}
+
+.user-switcher-toggle:hover {
+    border-color: #b0b4ba;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.user-avatar {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background-color: var(--bb-text);
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.user-avatar-sm {
+    width: 22px;
+    height: 22px;
+    font-size: 0.65rem;
+}
+
+.user-name {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--bb-text);
+}
+
+.user-chevron {
+    font-size: 0.65rem;
+    color: var(--bb-text-secondary);
+    transition: transform 0.15s ease;
+}
+
+.user-switcher-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    background: #fff;
+    border: 1px solid var(--bb-border);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    min-width: 170px;
+    padding: 0.3rem;
+    display: none;
+    z-index: 1000;
+}
+
+.user-switcher-menu.show {
+    display: block;
+}
+
+.user-switcher-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.4rem 0.6rem;
+    border: none;
+    background: none;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--bb-text);
+    cursor: pointer;
+    transition: background-color 0.1s ease;
+    font-family: inherit;
+}
+
+.user-switcher-item:hover {
+    background-color: var(--bb-bg-section);
+}
+
+.user-switcher-item.active {
+    background-color: rgba(0, 0, 0, 0.04);
+}
+
 /* ── Page header ── */
 .page-header {
     display: flex;
@@ -56,6 +154,13 @@ body {
     font-weight: 600;
     color: var(--bb-text);
     margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.page-header h2 i {
+    font-size: 1.25rem;
 }
 
 .page-header .btn-action {
@@ -128,7 +233,7 @@ body {
 /* ── Listing cards ── */
 .listing-card {
     cursor: pointer;
-    transition: border-color 0.15s ease;
+    transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
     border: 1px solid var(--bb-border);
     border-radius: 10px;
     overflow: hidden;
@@ -137,6 +242,8 @@ body {
 
 .listing-card:hover {
     border-color: #b0b4ba;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
 }
 
 .listing-card .card-body {
@@ -446,19 +553,41 @@ body {
 }
 
 /* ── Tables ── */
-.table th {
-    font-size: 0.75rem;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: var(--bb-text-secondary);
-    border-bottom-width: 1px;
+.table {
+    border-collapse: separate;
+    border-spacing: 0;
+    background: #fff;
+    border: 1px solid var(--bb-border);
+    border-radius: 10px;
+    overflow: hidden;
 }
 
-.table td {
-    font-size: 0.875rem;
-    vertical-align: middle;
+.table thead th {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--bb-text-secondary);
+    background-color: var(--bb-bg-section);
+    border-bottom: 1px solid var(--bb-border);
+    padding: 0.65rem 1rem;
 }
+
+.table tbody td {
+    font-size: 0.85rem;
+    vertical-align: middle;
+    padding: 0.7rem 1rem;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.table tbody tr:hover {
+    background-color: rgba(0, 0, 0, 0.015);
+}
+
 
 /* ── Alerts ── */
 .alert {
@@ -531,12 +660,104 @@ body {
 }
 
 /* ── Empty state ── */
-#empty-state p {
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+}
+
+.empty-state .empty-icon {
+    font-size: 2.5rem;
+    color: #d1d5db;
+    margin-bottom: 1rem;
+}
+
+.empty-state p {
     color: var(--bb-text-secondary);
-    font-size: 1rem;
+    font-size: 0.95rem;
+    margin-bottom: 1rem;
+}
+
+/* Compact empty state inside detail sections */
+#auction-section .empty-state,
+#fixed-section .empty-state {
+    padding: 2rem 1rem;
+}
+
+#auction-section .empty-state .empty-icon,
+#fixed-section .empty-state .empty-icon {
+    font-size: 2rem;
+}
+
+/* ── Delete button icon ── */
+.btn-delete i {
+    font-size: 0.72rem;
+    margin-right: 0.15rem;
+}
+
+/* ── Skeleton loader ── */
+@keyframes skeleton-pulse {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
+}
+
+.skeleton {
+    animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.skeleton-card {
+    border: 1px solid var(--bb-border);
+    border-radius: 10px;
+    overflow: hidden;
+    background: #fff;
+}
+
+.skeleton-img {
+    height: 180px;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.5s ease-in-out infinite;
+}
+
+.skeleton-line {
+    height: 0.75rem;
+    border-radius: 4px;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.5s ease-in-out infinite;
+    margin-bottom: 0.5rem;
+}
+
+.skeleton-line.w-60 { width: 60%; }
+.skeleton-line.w-40 { width: 40%; }
+.skeleton-line.w-80 { width: 80%; }
+
+@keyframes skeleton-shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
 }
 
 /* ── Spinner ── */
 .spinner-border {
     color: #9ca3af !important;
+}
+
+/* ── Navbar icon ── */
+.navbar-brand i {
+    font-size: 0.95rem;
+    margin-right: 0.25rem;
+    vertical-align: -1px;
+}
+
+/* ── Page header icon ── */
+.page-header .btn-action i {
+    font-size: 0.78rem;
+    margin-right: 0.2rem;
+}
+
+/* ── Table header icon ── */
+.table th i {
+    font-size: 0.7rem;
+    margin-right: 0.15rem;
+    opacity: 0.6;
 }

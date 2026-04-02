@@ -60,24 +60,46 @@ function initBuyerSwitcher() {
     const container = document.getElementById("buyer-switcher");
     if (!container) return;
 
-    const select = document.createElement("select");
-    select.className = "form-select form-select-sm";
-    select.style.width = "160px";
+    const current = CONFIG.BUYERS.find(b => b.id === CONFIG.BUYER_ID) || CONFIG.BUYERS[0];
+    const initial = current.name.charAt(0).toUpperCase();
+
+    const wrapper = document.createElement("div");
+    wrapper.className = "user-switcher";
+
+    // Toggle button
+    const toggle = document.createElement("button");
+    toggle.className = "user-switcher-toggle";
+    toggle.innerHTML = `<span class="user-avatar">${initial}</span><span class="user-name">${current.name}</span><i class="bi bi-chevron-down user-chevron"></i>`;
+
+    // Dropdown menu
+    const menu = document.createElement("div");
+    menu.className = "user-switcher-menu";
 
     CONFIG.BUYERS.forEach(b => {
-        const opt = document.createElement("option");
-        opt.value = b.id;
-        opt.textContent = b.name;
-        if (b.id === CONFIG.BUYER_ID) opt.selected = true;
-        select.appendChild(opt);
+        const item = document.createElement("button");
+        item.className = "user-switcher-item" + (b.id === CONFIG.BUYER_ID ? " active" : "");
+        const bInitial = b.name.charAt(0).toUpperCase();
+        item.innerHTML = `<span class="user-avatar user-avatar-sm">${bInitial}</span>${b.name}`;
+        item.addEventListener("click", () => {
+            if (b.id !== CONFIG.BUYER_ID) {
+                localStorage.setItem("buyerId", b.id);
+                window.location.reload();
+            }
+            menu.classList.remove("show");
+        });
+        menu.appendChild(item);
     });
 
-    select.addEventListener("change", () => {
-        localStorage.setItem("buyerId", select.value);
-        window.location.reload();
+    toggle.addEventListener("click", (e) => {
+        e.stopPropagation();
+        menu.classList.toggle("show");
     });
 
-    container.appendChild(select);
+    document.addEventListener("click", () => menu.classList.remove("show"));
+
+    wrapper.appendChild(toggle);
+    wrapper.appendChild(menu);
+    container.appendChild(wrapper);
 }
 
 /**

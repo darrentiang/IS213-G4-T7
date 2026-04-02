@@ -13,19 +13,19 @@ amqp_port = int(environ.get("RABBITMQ_PORT", 5672))
 # creates a "mini app" just for bid routes
 bid_bp = Blueprint('bid', __name__)
 
-# get all bids or all bids of a specific listing
+# get all bids, filtered by listingId, buyerId, or both
 @bid_bp.route("/bids", methods=['GET'])
 def get_bids():
-    listing_id = request.args.get('listingId')
+    listing_id = request.args.get('listingId', type=int)
+    buyer_id = request.args.get('buyerId', type=int)
 
+    query = db.select(Bid)
     if listing_id:
-        # /bids?listingId=
-        bids = db.session.scalars(db.select(Bid).filter_by(listing_id=listing_id)).all()
-        message = "No bids found for this listing."
-    else:
-        # /bids
-        bids = db.session.scalars(db.select(Bid)).all()
-        message = "No bids found."
+        query = query.filter_by(listing_id=listing_id)
+    if buyer_id:
+        query = query.filter_by(buyer_id=buyer_id)
+
+    bids = db.session.scalars(query).all()
 
     return jsonify({
         "code": 200,

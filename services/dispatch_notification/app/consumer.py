@@ -45,6 +45,16 @@ MAX_RETRIES = 3
 _retry_counts = {}
 
 
+def _get_listing_title(listing_id, fallback=None):
+    """Fetch listing title from Listing service; returns fallback on failure."""
+    try:
+        resp = requests.get(f"{LISTING_SERVICE_URL}/listings/{listing_id}")
+        resp.raise_for_status()
+        return resp.json().get("data", {}).get("title") or fallback or f"listing #{listing_id}"
+    except Exception:
+        return fallback or f"listing #{listing_id}"
+
+
 def _retry_or_discard(channel, method, body, label):
     """
     On notification failure: requeue up to MAX_RETRIES times, then discard.
@@ -103,7 +113,7 @@ def handle_bid_placed(channel, method, properties, body):
             json={
                 "recipientEmail": email,
                 "subject": "You've been outbid!",
-                "body": f"Someone placed a higher bid of ${amount:.2f} on listing {listing_id}. Place a new bid to stay in the lead!"
+                "body": f"Someone placed a higher bid of ${amount:.2f} on \"{_get_listing_title(listing_id)}\". Place a new bid to stay in the lead!"
             }
         )
         notif_response.raise_for_status()
@@ -150,16 +160,19 @@ def handle_listing_event(channel, method, properties, body):
             listing_response.raise_for_status()
             listing = listing_response.json().get("data", {})
             start_time = to_sgt(listing.get("startTime", "")) or "the scheduled time"
+            listing_title = listing.get("title") or f"listing #{listing_id}"
         except Exception as e:
             print(f"[listing.scheduled] Failed to get listing {listing_id}: {e}")
             start_time = "the scheduled time"
+            listing_title = f"listing #{listing_id}"
 
         subject = "Your auction has been scheduled!"
-        body_text = f"Your auction (listing #{listing_id}) is scheduled to go live at {start_time}."
+        body_text = f"Your auction \"{listing_title}\" is scheduled to go live at {start_time}."
 
     elif routing_key == "listing.active":
+        listing_title = _get_listing_title(listing_id)
         subject = "Your auction is now LIVE!"
-        body_text = f"Your auction (listing #{listing_id}) is now active. Buyers can start placing bids!"
+        body_text = f"Your auction \"{listing_title}\" is now active. Buyers can start placing bids!"
 
     else:
         print(f"[{routing_key}] Unhandled listing event. Skipping.")
@@ -208,7 +221,7 @@ def handle_auction_no_eligible_bidders(channel, method, properties, body):
             json={
                 "recipientEmail": email,
                 "subject": "Auction ended — no eligible bidders",
-                "body": f"Your auction (listing #{listing_id}) has ended, but no bidders could complete payment. The listing has been marked as unsold."
+                "body": f"Your auction \"{_get_listing_title(listing_id)}\" has ended, but no bidders could complete payment. The listing has been marked as unsold."
             }
         )
         notif_response.raise_for_status()
@@ -235,7 +248,9 @@ def handle_payment_event(channel, method, properties, body):
     try:
         listing_resp = requests.get(f"{LISTING_SERVICE_URL}/listings/{listing_id}")
         listing_resp.raise_for_status()
-        seller_id = listing_resp.json().get("data", {}).get("sellerId")
+        listing_data = listing_resp.json().get("data", {})
+        seller_id = listing_data.get("sellerId")
+        listing_title = listing_data.get("title") or f"listing #{listing_id}"
     except Exception as e:
         print(f"[{routing_key}] Failed to get listing {listing_id}: {e}")
         channel.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
@@ -260,10 +275,10 @@ def handle_payment_event(channel, method, properties, body):
     if routing_key == "payment.success":
         amount = message.get("amount", 0)
         subject = "Payment confirmed!"
-        body_text = f"Payment of ${amount:.2f} for listing #{listing_id} was successful. Transaction complete!"
+        body_text = f"Payment of ${amount:.2f} for \"{listing_title}\" was successful. Transaction complete!"
     else:
         subject = "Payment failed"
-        body_text = f"Payment for listing #{listing_id} has failed. Please contact support if you believe this is an error."
+        body_text = f"Payment for \"{listing_title}\" has failed. Please contact support if you believe this is an error."
 
     # send to each recipient
     for role, email in emails.items():
@@ -295,6 +310,7 @@ def handle_offer_event(channel, method, properties, body):
     buyer_id = message.get("buyerId")
     seller_id = message.get("sellerId")
     amount = message.get("amount")
+    listing_title = _get_listing_title(listing_id)
 
     def get_email(user_id):
         resp = requests.get(f"{USER_SERVICE_URL}/users/{user_id}")
@@ -311,7 +327,7 @@ def handle_offer_event(channel, method, properties, body):
             return
         recipients = [("seller", email)]
         subject = f"You received an offer of ${amount:.2f}"
-        body_text = f"A buyer has made an offer of ${amount:.2f} on your listing #{listing_id}. Log in to accept, counter, or reject."
+        body_text = f"A buyer has made an offer of ${amount:.2f} on your listing \"{listing_title}\". Log in to accept, counter, or reject."
 
     elif routing_key == "offer.countered":
         # Notify buyer: "Seller countered at $X"
@@ -323,7 +339,7 @@ def handle_offer_event(channel, method, properties, body):
             return
         recipients = [("buyer", email)]
         subject = f"Seller countered at ${amount:.2f}"
-        body_text = f"The seller has countered your offer on listing #{listing_id} with ${amount:.2f}. Log in to accept or reject."
+        body_text = f"The seller has countered your offer on \"{listing_title}\" with ${amount:.2f}. Log in to accept or reject."
 
     elif routing_key == "offer.accepted":
         # Notify buyer: "Your offer has been accepted!"
@@ -335,7 +351,7 @@ def handle_offer_event(channel, method, properties, body):
             return
         recipients = [("buyer", email)]
         subject = "Your offer has been accepted!"
-        body_text = f"Your offer of ${amount:.2f} on listing #{listing_id} has been accepted. Payment will be processed shortly."
+        body_text = f"Your offer of ${amount:.2f} on \"{listing_title}\" has been accepted. Payment will be processed shortly."
 
     elif routing_key == "offer.rejected":
         # Notify seller: "Buyer rejected your counter"
@@ -347,7 +363,7 @@ def handle_offer_event(channel, method, properties, body):
             return
         recipients = [("seller", email)]
         subject = "Buyer rejected your counter offer"
-        body_text = f"The buyer has rejected your counter offer on listing #{listing_id}. The offer has been closed."
+        body_text = f"The buyer has rejected your counter offer on \"{listing_title}\". The offer has been closed."
 
     else:
         print(f"[{routing_key}] Unhandled offer event. Skipping.")

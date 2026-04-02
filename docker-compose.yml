@@ -320,6 +320,8 @@ services:
       - "5003:5003"
     environment:
       - dbURL=mysql+mysqlconnector://root:root@offer-db:3306/offer_db
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
     depends_on:
       offer-db:
         condition: service_healthy

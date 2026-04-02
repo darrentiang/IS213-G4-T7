@@ -38,9 +38,6 @@ body {
     align-items: center;
 }
 
-.navbar .navbar-brand i {
-    -webkit-text-fill-color: #7c3aed;
-}
 
 .navbar .navbar-text {
     font-size: 0.82rem;
@@ -109,7 +106,8 @@ body {
 }
 
 .user-chevron {
-    font-size: 0.65rem;
+    width: 0.75rem;
+    height: 0.75rem;
     color: var(--bb-text-secondary);
     transition: transform 0.15s ease;
 }
@@ -175,8 +173,9 @@ body {
     gap: 0.5rem;
 }
 
-.page-header h2 i {
-    font-size: 1.25rem;
+.page-header h2 .lucide {
+    width: 1.3rem;
+    height: 1.3rem;
 }
 
 .page-header .btn-action {
@@ -231,17 +230,18 @@ body {
     background-color: rgba(8, 145, 178, 0.04);
 }
 
-.type-card i {
-    font-size: 1.5rem;
+.type-card .lucide {
+    width: 1.5rem;
+    height: 1.5rem;
     color: var(--bb-text-secondary);
     margin-bottom: 0.15rem;
 }
 
-.type-card-auction.selected i {
+.type-card-auction.selected .lucide {
     color: #7c3aed;
 }
 
-.type-card-fixed.selected i {
+.type-card-fixed.selected .lucide {
     color: #0891b2;
 }
 
@@ -759,8 +759,10 @@ body {
     padding: 0.5rem 1.25rem;
 }
 
-.btn-dark i {
-    margin-right: 0.25rem;
+.btn-dark .lucide {
+    width: 0.85rem;
+    height: 0.85rem;
+    margin-right: 0.2rem;
 }
 
 .btn-dark:hover {
@@ -822,9 +824,10 @@ body {
 }
 
 /* ── Delete button icon ── */
-.btn-delete i {
-    font-size: 0.72rem;
-    margin-right: 0.15rem;
+.btn-delete .lucide {
+    width: 0.78rem;
+    height: 0.78rem;
+    margin-right: 0.1rem;
 }
 
 /* ── Skeleton loader ── */
@@ -875,21 +878,38 @@ body {
     color: #9ca3af !important;
 }
 
+/* ── Lucide icon defaults ── */
+.lucide {
+    width: 1em;
+    height: 1em;
+    vertical-align: -0.125em;
+    stroke-width: 2;
+}
+
 /* ── Navbar icon ── */
-.navbar-brand i {
-    font-size: 1rem;
-    margin-right: 0.3rem;
+.navbar-brand .lucide {
+    width: 1.1rem;
+    height: 1.1rem;
+    margin-right: 0.25rem;
+    stroke: #7c3aed;
+    fill: #7c3aed;
 }
 
 /* ── Page header icon ── */
-.page-header .btn-action i {
-    font-size: 0.78rem;
-    margin-right: 0.2rem;
+.page-header .btn-action .lucide {
+    width: 0.82rem;
+    height: 0.82rem;
+    margin-right: 0.15rem;
 }
 
-/* ── Table header icon ── */
-.table th i {
-    font-size: 0.7rem;
-    margin-right: 0.15rem;
-    opacity: 0.6;
+/* ── Empty state icon ── */
+.empty-state .empty-icon .lucide {
+    width: 2.5rem;
+    height: 2.5rem;
+}
+
+#auction-section .empty-state .empty-icon .lucide,
+#fixed-section .empty-state .empty-icon .lucide {
+    width: 2rem;
+    height: 2rem;
 }

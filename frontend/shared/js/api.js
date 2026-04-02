@@ -3,6 +3,11 @@
  * Wraps fetch with JSON headers and response envelope unwrapping.
  */
 
+/** Re-render Lucide icons after dynamic HTML insertion. */
+function refreshIcons() {
+    if (typeof lucide !== "undefined") lucide.createIcons();
+}
+
 async function apiFetch(url, options = {}) {
     const buyerId = parseInt(localStorage.getItem("buyerId")) || 2;
     const defaults = {
@@ -75,7 +80,7 @@ function initBuyerSwitcher() {
     // Toggle button
     const toggle = document.createElement("button");
     toggle.className = "user-switcher-toggle";
-    toggle.innerHTML = `<span class="user-avatar ${current.color || avatarColor(current.id)}">${initial}</span><span class="user-name">${current.name}</span><i class="bi bi-chevron-down user-chevron"></i>`;
+    toggle.innerHTML = `<span class="user-avatar ${current.color || avatarColor(current.id)}">${initial}</span><span class="user-name">${current.name}</span><i data-lucide="chevron-down" class="user-chevron"></i>`;
 
     // Dropdown menu
     const menu = document.createElement("div");
@@ -106,6 +111,7 @@ function initBuyerSwitcher() {
     wrapper.appendChild(toggle);
     wrapper.appendChild(menu);
     container.appendChild(wrapper);
+    refreshIcons();
 }
 
 /**

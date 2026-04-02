@@ -211,7 +211,7 @@
         async function loadBids() {
             try {
                 const result = await apiFetch(`${CONFIG.BID_API}/bids?listingId=${listingId}`);
-                const bids = (result.bids || []).sort((a, b) => b.amount - a.amount);
+                const bids = (result.bids || []).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
                 if (bids.length === 0) {
                     const emptyEl = document.getElementById("bids-empty");
@@ -222,7 +222,7 @@
                 }
 
                 // Update price section if there are bids
-                const highest = bids[0];
+                const highest = bids.reduce((max, b) => b.amount > max.amount ? b : max, bids[0]);
                 const isSold = currentListing.status === "SOLD" && currentListing.winningPrice;
                 const isEnded = ["CLOSED_PENDING_PAYMENT", "SOLD", "FAILED_NO_ELIGIBLE_BIDDER"].includes(currentListing.status);
                 if (isSold) {
@@ -256,7 +256,7 @@
                 const tbody = document.getElementById("bids-body");
                 tbody.innerHTML = bids.map((bid, i) => {
                     const isWinner = currentListing.status === "SOLD" && bid.buyerId === winnerId && bid.amount === winnerPrice;
-                    const isHighest = i === 0 && currentListing.status !== "SOLD";
+                    const isHighest = bid.amount === highest.amount && currentListing.status !== "SOLD";
                     const rowClass = isWinner ? "bid-row-highest" : isHighest ? "bid-row-highest" : "";
                     const badge = isWinner ? ' <span class="badge bg-success badge-winner">Winner</span>' : "";
                     return `<tr class="${rowClass}">

@@ -459,7 +459,7 @@ services:
     container_name: grafana
     restart: always
     ports:
-      - "13000:3000"
+      - "3100:3000"
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin
     volumes:

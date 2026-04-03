@@ -14,6 +14,9 @@ INSERT INTO users (email, name, stripe_id) VALUES
     -- ('jiayingkam0811@gmail.com', 'Alice Tan', 'cus_test_alice001'),
     -- ('jiayingkam0811@gmail.com', 'Bob Lim', 'cus_UFTMQiGA5lpook'),
     -- ('jiayingkam0811@gmail.com', 'Charlie Ng', 'cus_UFTPSV7hB0vszX');
-    ('tiangdarren@gmail.com', 'Alice Tan', 'cus_test_alice001'),
-    ('darrentiang0@gmail.com', 'Bob Lim', 'cus_UFTMQiGA5lpook'),
-    ('darrentiang1@gmail.com', 'Charlie Ng', 'cus_UFTPSV7hB0vszX');
+    -- ('tiangdarren@gmail.com', 'Alice Tan', 'cus_test_alice001'),
+    -- ('darrentiang0@gmail.com', 'Bob Lim', 'cus_UFTMQiGA5lpook'),
+    -- ('darrentiang1@gmail.com', 'Charlie Ng', 'cus_UFTPSV7hB0vszX');
+    ('arieltan2610@gmail.com', 'Alice Tan', 'cus_test_alice001'),
+    ('arieltan2610@gmail.com', 'Bob Lim', 'cus_UFTMQiGA5lpook'),
+    ('arieltan2610@gmail.com', 'Charlie Ng', 'cus_UFTPSV7hB0vszX');

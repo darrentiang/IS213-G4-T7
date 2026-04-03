@@ -84,7 +84,7 @@ plugins:
   - grpcs
   - http
   - https
-  route: bid
+  route: bid-write
   service: bid
 services:
 - connect_timeout: 60000
@@ -120,10 +120,29 @@ services:
   retries: 5
   routes:
   - https_redirect_status_code: 426
-    name: bid
+    name: bid-write
     path_handling: v0
     paths:
     - /bids
+    methods:
+    - POST
+    - OPTIONS
+    preserve_host: false
+    protocols:
+    - http
+    - https
+    regex_priority: 0
+    request_buffering: true
+    response_buffering: true
+    strip_path: false
+  - https_redirect_status_code: 426
+    name: bid-read
+    path_handling: v0
+    paths:
+    - /bids
+    methods:
+    - GET
+    - OPTIONS
     preserve_host: false
     protocols:
     - http

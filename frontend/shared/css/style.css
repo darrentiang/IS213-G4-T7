@@ -1,5 +1,6 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700&family=DM+Serif+Display&display=swap');
 /* BidBoard shared styles — clean minimal theme on top of Bootstrap 5 */
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@800&display=swap');
+
 
 :root {
     --bb-text: #1a1a1a;
@@ -24,7 +25,7 @@ body {
 .navbar {
     background-color: var(--bb-nav-bg) !important;
     border-bottom: 1px solid #e5e7eb;
-    padding: 0.6rem 0;
+    padding: 0.8rem 0;
 }
 
 .navbar .navbar-brand {
@@ -33,7 +34,7 @@ body {
     font-size: 1.2rem;
     letter-spacing: -0.02em;
     text-decoration: none;
-    background: linear-gradient(135deg, #7c3aed, #3b82f6);
+    background: linear-gradient(135deg, #ffffff, #bfdbfe);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -43,7 +44,7 @@ body {
 
 .navbar .navbar-text {
     font-size: 0.82rem;
-    color: var(--bb-text-secondary) !important;
+    color: #cbd5e1 !important;
     font-weight: 400;
 }
 
@@ -166,6 +167,7 @@ body {
 }
 
 .page-header h2 {
+    font-family: 'Syne', sans-serif;
     font-size: 1.5rem;
     font-weight: 600;
     color: var(--bb-text);
@@ -392,6 +394,7 @@ body {
 }
 
 .listing-card .card-title {
+    font-family: 'DM Serif Display', serif;
     font-size: 0.95rem;
     font-weight: 600;
     color: var(--bb-text);
@@ -405,6 +408,7 @@ body {
 }
 
 .listing-card .card-text.small {
+    font-family: 'DM Serif Display', serif;
     font-size: 0.78rem;
     color: var(--bb-text-secondary);
 }

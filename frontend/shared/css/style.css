@@ -315,13 +315,14 @@ body {
 .preset-pill:hover {
     border-color: var(--bb-text);
     color: var(--bb-text);
+    box-shadow: var(--shadow-sm);
 }
 
 .preset-pill.active {
     background-color: var(--bb-text);
     border-color: var(--bb-text);
     color: #fff;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+    box-shadow: var(--shadow-md);
 }
 
 /* ── Schedule summary ── */
@@ -390,13 +391,14 @@ body {
 .filter-tab:hover {
     border-color: var(--bb-text);
     color: var(--bb-text);
+    box-shadow: var(--shadow-sm);
 }
 
 .filter-tab.active {
     background-color: var(--bb-text);
     border-color: var(--bb-text);
     color: #fff;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+    box-shadow: var(--shadow-md);
 }
 
 /* ── Listing cards ── */
@@ -446,6 +448,7 @@ body {
 
 /* Price in cards */
 .listing-card .price-tag {
+    font-family: 'Rubik', sans-serif;
     font-size: 0.95rem;
     font-weight: 600;
     color: #16a34a;
@@ -472,14 +475,17 @@ body {
     bottom: 0;
     left: 0;
     right: 0;
-    padding: 0.35rem 0.75rem;
+    padding: 0.4rem 0.85rem;
+    font-family: 'Rubik', sans-serif;
     font-size: 0.75rem;
     font-weight: 600;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.03em;
     text-align: center;
-    background-color: rgba(0, 0, 0, 0.6);
+    background-color: rgba(0, 0, 0, 0.65);
     color: #fff;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
 }
 
 .countdown-overlay.countdown-scheduled {
@@ -487,15 +493,15 @@ body {
 }
 
 .countdown-overlay.countdown-active {
-    background-color: rgba(22, 163, 74, 0.8);
+    background-color: rgba(22, 163, 74, 0.85);
 }
 
 .countdown-overlay.countdown-ending {
-    background-color: rgba(220, 38, 38, 0.8);
+    background-color: rgba(220, 38, 38, 0.85);
 }
 
 .countdown-overlay.countdown-ended {
-    background-color: rgba(55, 65, 81, 0.8);
+    background-color: rgba(55, 65, 81, 0.85);
 }
 
 /* Placeholder for listings without images */
@@ -681,12 +687,14 @@ body {
 }
 
 .price-display {
+    font-family: 'Rubik', sans-serif;
     font-size: 1.4rem;
     font-weight: 600;
     color: #16a34a;
 }
 
 .price-display-sold {
+    font-family: 'Rubik', sans-serif;
     font-size: 1.4rem;
     font-weight: 600;
     color: var(--bb-text);
@@ -697,6 +705,9 @@ body {
     margin-left: 0.4rem;
     font-size: 0.68rem;
     vertical-align: middle;
+    background-color: rgba(22, 163, 74, 0.08) !important;
+    color: #16a34a !important;
+    border: 1px solid #16a34a;
 }
 
 .price-start-note {
@@ -720,7 +731,7 @@ body {
     color: var(--bb-text);
     margin-bottom: 1rem;
     padding-bottom: 0.5rem;
-    border-bottom: 2px solid #e5e7eb;
+    border-bottom: 2px solid #d4d4d4;
 }
 
 /* Bid table highlights */
@@ -880,6 +891,7 @@ body {
     background-color: var(--bb-bg-section);
     border-color: #b0b4ba;
     color: var(--bb-text);
+    box-shadow: var(--shadow-sm);
 }
 
 .btn-outline-secondary:active {

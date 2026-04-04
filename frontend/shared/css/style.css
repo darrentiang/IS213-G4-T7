@@ -31,7 +31,7 @@ body {
 .navbar .navbar-brand {
     font-family: 'Syne', sans-serif;
     font-weight: 700;
-    font-size: 1.2rem;
+    font-size: 1.5rem;
     letter-spacing: -0.02em;
     text-decoration: none;
     background: linear-gradient(135deg, #ffffff, #bfdbfe);
@@ -175,6 +175,7 @@ body {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    white-space: nowrap;
 }
 
 .page-header h2 .lucide {
@@ -394,7 +395,6 @@ body {
 }
 
 .listing-card .card-title {
-    font-family: 'DM Serif Display', serif;
     font-size: 0.95rem;
     font-weight: 600;
     color: var(--bb-text);
@@ -408,7 +408,6 @@ body {
 }
 
 .listing-card .card-text.small {
-    font-family: 'DM Serif Display', serif;
     font-size: 0.78rem;
     color: var(--bb-text-secondary);
 }

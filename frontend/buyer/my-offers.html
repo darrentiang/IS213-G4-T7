@@ -47,7 +47,8 @@
                         <th>Listing</th>
                         <th>Your Offer</th>
                         <th>Counter</th>
-                        <th>Status</th>
+                        <th>Offer Status</th>
+                        <th>Listing Status</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -75,15 +76,14 @@
                     return;
                 }
 
-                // Fetch listing titles in parallel
+                // Fetch listing details in parallel
                 const listingIds = [...new Set(offers.map(o => o.listingId))];
-                const listingTitles = {};
+                const listingData = {};
                 await Promise.all(listingIds.map(async (id) => {
                     try {
-                        const listing = await apiFetch(`${CONFIG.LISTING_API}/listings/${id}`);
-                        listingTitles[id] = listing.title;
+                        listingData[id] = await apiFetch(`${CONFIG.LISTING_API}/listings/${id}`);
                     } catch {
-                        listingTitles[id] = `Listing #${id}`;
+                        listingData[id] = null;
                     }
                 }));
 
@@ -106,13 +106,16 @@
                         actions = `<span class="text-muted" style="font-size: 0.82rem;">Waiting...</span>`;
                     }
 
-                    const title = listingTitles[offer.listingId] || `Listing #${offer.listingId}`;
+                    const listing = listingData[offer.listingId];
+                    const title = listing ? listing.title : `Listing #${offer.listingId}`;
+                    const listingStatusBadge = `<span class="badge ${buyerStatusBadgeClass(listing, CONFIG.BUYER_ID)}">${buyerStatusLabel(listing, CONFIG.BUYER_ID)}</span>`;
 
                     return `<tr>
                         <td><a href="/buyer/listing-detail.html?id=${offer.listingId}" class="text-decoration-none">${title}</a></td>
                         <td class="fw-medium">${formatPrice(offer.amount)}</td>
                         <td>${counterDisplay}</td>
                         <td>${statusBadge}</td>
+                        <td>${listingStatusBadge}</td>
                         <td>${actions}</td>
                     </tr>`;
                 }).join("");

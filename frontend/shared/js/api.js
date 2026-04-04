@@ -151,6 +151,41 @@ function statusLabel(status) {
 }
 
 /**
+ * Buyer-contextual listing status label.
+ * Shows "Won" or "Outbid" for SOLD listings based on winningBuyerId.
+ */
+function buyerStatusLabel(listing, buyerId) {
+    if (!listing) return "Unknown";
+    switch (listing.status) {
+        case "SCHEDULED": return "Upcoming";
+        case "ACTIVE": return "Live";
+        case "CLOSED_PENDING_PAYMENT":
+            return listing.winningBuyerId === buyerId ? "Awaiting Payment" : "Processing";
+        case "SOLD":
+            return listing.winningBuyerId === buyerId ? "Won" : "Outbid";
+        case "FAILED_NO_ELIGIBLE_BIDDER": return "No Winner";
+        default: return listing.status;
+    }
+}
+
+/**
+ * Buyer-contextual listing status badge class.
+ */
+function buyerStatusBadgeClass(listing, buyerId) {
+    if (!listing) return "badge-status-default";
+    switch (listing.status) {
+        case "SCHEDULED": return "badge-status-scheduled";
+        case "ACTIVE": return "badge-status-active";
+        case "CLOSED_PENDING_PAYMENT":
+            return listing.winningBuyerId === buyerId ? "badge-status-active" : "badge-status-closed-pending";
+        case "SOLD":
+            return listing.winningBuyerId === buyerId ? "badge-status-active" : "badge-status-failed";
+        case "FAILED_NO_ELIGIBLE_BIDDER": return "badge-status-failed";
+        default: return "badge-status-default";
+    }
+}
+
+/**
  * Return an outline badge class for an offer status.
  */
 function offerBadgeClass(status) {

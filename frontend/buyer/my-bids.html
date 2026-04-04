@@ -91,8 +91,7 @@
                 tbody.innerHTML = bids.map(bid => {
                     const listing = listingData[bid.listingId];
                     const title = listing ? listing.title : `Listing #${bid.listingId}`;
-                    const status = listing ? listing.status : "UNKNOWN";
-                    const statusBadge = `<span class="badge ${statusBadgeClass(status)}">${statusLabel(status)}</span>`;
+                    const statusBadge = `<span class="badge ${buyerStatusBadgeClass(listing, CONFIG.BUYER_ID)}">${buyerStatusLabel(listing, CONFIG.BUYER_ID)}</span>`;
 
                     return `<tr>
                         <td><a href="/buyer/listing-detail.html?id=${bid.listingId}" class="text-decoration-none">${title}</a></td>

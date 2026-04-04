@@ -1,4 +1,5 @@
 /* BidBoard shared styles — clean minimal theme on top of Bootstrap 5 */
+@import url('https://fonts.googleapis.com/css2?family=Rubik:wght@500;600;700&display=swap');
 
 :root {
     --bb-text: #1a1a1a;
@@ -8,7 +9,11 @@
     --bb-bg-section: #f5f5f5;
     --bb-nav-bg: #f3f4f6;
     --bb-nav-text: #1a1a1a;
-    --bb-focus: rgba(59, 130, 246, 0.15);
+    --bb-focus: rgba(124, 58, 237, 0.12);
+    --bb-accent: #7c3aed;
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.03), 0 1px 3px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.03), 0 4px 12px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 4px 8px rgba(0, 0, 0, 0.03), 0 12px 28px rgba(0, 0, 0, 0.08);
 }
 
 body {
@@ -21,12 +26,18 @@ body {
 
 /* ── Navbar ── */
 .navbar {
-    background-color: var(--bb-nav-bg) !important;
-    border-bottom: 1px solid #e5e7eb;
+    background-color: rgba(255, 255, 255, 0.82) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
     padding: 0.6rem 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
 }
 
 .navbar .navbar-brand {
+    font-family: 'Rubik', sans-serif;
     font-weight: 700;
     font-size: 1.2rem;
     letter-spacing: -0.02em;
@@ -119,7 +130,7 @@ body {
     background: #fff;
     border: 1px solid var(--bb-border);
     border-radius: 8px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-lg);
     min-width: 170px;
     padding: 0.3rem;
     display: none;
@@ -164,6 +175,7 @@ body {
 }
 
 .page-header h2 {
+    font-family: 'Rubik', sans-serif;
     font-size: 1.5rem;
     font-weight: 600;
     color: var(--bb-text);
@@ -372,17 +384,18 @@ body {
 /* ── Listing cards ── */
 .listing-card {
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.25s ease;
     border: 1px solid var(--bb-border);
     border-radius: 10px;
     overflow: hidden;
     background: #fff;
+    box-shadow: var(--shadow-sm);
 }
 
 .listing-card:hover {
-    border-color: #b0b4ba;
-    transform: translateY(-4px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+    border-color: #d0d0d0;
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lg);
 }
 
 .listing-card .card-body {
@@ -390,6 +403,7 @@ body {
 }
 
 .listing-card .card-title {
+    font-family: 'Rubik', sans-serif;
     font-size: 0.95rem;
     font-weight: 600;
     color: var(--bb-text);
@@ -400,6 +414,11 @@ body {
     height: 180px;
     object-fit: cover;
     background-color: #f0f0f0;
+    transition: transform 0.35s ease;
+}
+
+.listing-card:hover .card-img-top {
+    transform: scale(1.03);
 }
 
 .listing-card .card-text.small {
@@ -597,6 +616,7 @@ body {
     overflow: hidden;
     border: 1px solid var(--bb-border);
     background: #fff;
+    box-shadow: var(--shadow-sm);
 }
 
 .detail-image-wrapper img {
@@ -616,6 +636,7 @@ body {
 }
 
 .detail-title {
+    font-family: 'Rubik', sans-serif;
     font-size: 1.4rem;
     font-weight: 600;
     color: var(--bb-text);
@@ -675,6 +696,7 @@ body {
 
 /* Section titles */
 .section-title {
+    font-family: 'Rubik', sans-serif;
     font-size: 1.1rem;
     font-weight: 600;
     color: var(--bb-text);
@@ -701,6 +723,7 @@ body {
     border: 1px solid var(--bb-border);
     border-radius: 10px;
     overflow: hidden;
+    box-shadow: var(--shadow-sm);
 }
 
 .table thead th {
@@ -737,7 +760,7 @@ body {
 }
 
 .table a:hover {
-    color: #3b82f6;
+    color: var(--bb-accent);
 }
 
 /* ── Alerts ── */
@@ -756,12 +779,12 @@ body {
 
 /* ── Form sections ── */
 .form-section {
-    background-color: var(--bb-bg-section);
+    background-color: #fff;
     border: 1px solid var(--bb-border);
-    border-radius: 8px;
+    border-radius: 10px;
     padding: 1.25rem 1.5rem;
     margin-bottom: 1.25rem;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+    box-shadow: var(--shadow-sm);
 }
 
 .form-label {
@@ -777,7 +800,7 @@ body {
 }
 
 .form-control:focus, .form-select:focus {
-    border-color: #3b82f6;
+    border-color: var(--bb-accent);
     box-shadow: 0 0 0 3px var(--bb-focus);
 }
 
@@ -801,7 +824,7 @@ body {
 .btn-dark:hover {
     background-color: #333;
     border-color: #333;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    box-shadow: var(--shadow-md);
 }
 
 .btn-dark:active {
@@ -852,7 +875,7 @@ body {
 .btn-delete:focus-visible,
 .type-card:focus-visible,
 .user-switcher-toggle:focus-visible {
-    outline: 2px solid #3b82f6;
+    outline: 2px solid var(--bb-accent);
     outline-offset: 2px;
 }
 

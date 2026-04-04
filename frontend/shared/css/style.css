@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700&family=DM+Serif+Display&display=swap');
+@@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700&family=Josefin+Sans:wght@600&display=swap');
 /* BidBoard shared styles — clean minimal theme on top of Bootstrap 5 */
 
 
@@ -164,6 +164,7 @@ body {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 1.75rem;
+    overflow: visible;
 }
 
 .page-header h2 {
@@ -176,6 +177,8 @@ body {
     align-items: center;
     gap: 0.5rem;
     white-space: nowrap;
+    overflow: visible;
+    line-height: 1.3; 
 }
 
 .page-header h2 .lucide {
@@ -395,6 +398,7 @@ body {
 }
 
 .listing-card .card-title {
+    font-family: 'Josefin Sans', sans-serif;
     font-size: 0.95rem;
     font-weight: 600;
     color: var(--bb-text);
@@ -408,6 +412,7 @@ body {
 }
 
 .listing-card .card-text.small {
+    font-family: 'Josefin Sans', sans-serif;
     font-size: 0.78rem;
     color: var(--bb-text-secondary);
 }

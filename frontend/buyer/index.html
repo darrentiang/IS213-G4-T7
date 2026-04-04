@@ -15,17 +15,19 @@
         <div class="container" style="position: relative;">
             <span class="navbar-text">Buyer: <span id="navbar-user-name">Loading...</span></span>
             <a href="/buyer/" class="navbar-brand" style="position: absolute; left: 50%; transform: translateX(-50%);"><i data-lucide="zap"></i> BidBoard</a>
-            <div id="buyer-switcher" class="d-flex align-items-center ms-auto"></div>
+            <div class="d-flex align-items-center ms-auto">
+                <div class="navbar-links">
+                    <a href="/buyer/my-bids.html"><i data-lucide="list"></i> My Bids</a>
+                    <a href="/buyer/my-offers.html"><i data-lucide="message-square-text"></i> My Offers</a>
+                </div>
+                <div id="buyer-switcher"></div>
+            </div>
         </div>
     </nav>
 
     <div class="container" style="margin-top: 2.5rem;">
         <div class="page-header">
             <h2><i data-lucide="store"></i> Marketplace</h2>
-            <div class="d-flex gap-2">
-                <a href="/buyer/my-bids.html" class="btn-action"><i data-lucide="list"></i> My Bids</a>
-                <a href="/buyer/my-offers.html" class="btn-action"><i data-lucide="message-square-text"></i> My Offers</a>
-            </div>
         </div>
 
         <!-- Filter buttons -->
@@ -58,6 +60,7 @@
     <script>
         loadNavbarUser(CONFIG.BUYER_ID);
         initBuyerSwitcher();
+        highlightNavLinks();
 
         let allListings = [];
         let currentFilter = "all";

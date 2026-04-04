@@ -61,6 +61,41 @@ body {
     font-weight: 500;
 }
 
+/* ── Navbar nav links (buyer) ── */
+.navbar-links {
+    display: flex;
+    gap: 0.25rem;
+    margin-right: 0.75rem;
+}
+
+.navbar-links a {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--bb-text-secondary);
+    text-decoration: none;
+    padding: 0.3rem 0.7rem;
+    border-radius: 6px;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.navbar-links a:hover {
+    color: var(--bb-text);
+    background-color: rgba(0, 0, 0, 0.04);
+}
+
+.navbar-links a.active {
+    color: var(--bb-accent);
+    background-color: rgba(124, 58, 237, 0.06);
+}
+
+.navbar-links .lucide {
+    width: 0.85rem;
+    height: 0.85rem;
+}
+
 /* ── User switcher ── */
 .user-switcher {
     position: relative;
@@ -177,7 +212,7 @@ body {
 .page-header h2 {
     font-family: 'Rubik', sans-serif;
     font-size: 1.5rem;
-    font-weight: 600;
+    font-weight: 500;
     color: var(--bb-text);
     margin: 0;
     display: flex;
@@ -425,7 +460,7 @@ body {
 .listing-card .card-title {
     font-family: 'Rubik', sans-serif;
     font-size: 0.95rem;
-    font-weight: 600;
+    font-weight: 500;
     color: var(--bb-text);
     margin-bottom: 0.35rem;
 }
@@ -662,7 +697,7 @@ body {
 .detail-title {
     font-family: 'Rubik', sans-serif;
     font-size: 1.4rem;
-    font-weight: 600;
+    font-weight: 500;
     color: var(--bb-text);
     margin-bottom: 0.35rem;
 }
@@ -727,7 +762,7 @@ body {
 .section-title {
     font-family: 'Rubik', sans-serif;
     font-size: 1.1rem;
-    font-weight: 600;
+    font-weight: 500;
     color: var(--bb-text);
     margin-bottom: 1rem;
     padding-bottom: 0.5rem;

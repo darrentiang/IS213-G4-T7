@@ -8,6 +8,16 @@ function refreshIcons() {
     if (typeof lucide !== "undefined") lucide.createIcons();
 }
 
+/** Highlight the active navbar link based on current path. */
+function highlightNavLinks() {
+    const path = window.location.pathname;
+    document.querySelectorAll(".navbar-links a").forEach(a => {
+        if (path === a.getAttribute("href") || path.endsWith(a.getAttribute("href"))) {
+            a.classList.add("active");
+        }
+    });
+}
+
 async function apiFetch(url, options = {}) {
     const buyerId = parseInt(localStorage.getItem("buyerId")) || 2;
     const defaults = {

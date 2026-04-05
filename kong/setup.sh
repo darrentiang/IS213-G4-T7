@@ -23,7 +23,7 @@ curl -s -X POST "$KONG_ADMIN/services" -d "name=ws-server" -d "url=http://ws-ser
 # ── Routes ──
 echo "Creating routes..."
 curl -s -X POST "$KONG_ADMIN/services/listing/routes" -d "name=listing" -d "paths[]=/listings" -d "strip_path=true" > /dev/null
-curl -s -X POST "$KONG_ADMIN/services/bid/routes" -d "name=bid-write" -d "paths[]=/bids" -d "methods[]=POST" -d "methods[]=OPTIONS" -d "strip_path=true" > /dev/null
+curl -s -X POST "$KONG_ADMIN/services/bid/routes" -d "name=bid-write" -d "paths[]=/bids" -d "methods[]=POST" -d "methods[]=DELETE" -d "methods[]=OPTIONS" -d "strip_path=true" > /dev/null
 curl -s -X POST "$KONG_ADMIN/services/bid/routes" -d "name=bid-read" -d "paths[]=/bids" -d "methods[]=GET" -d "methods[]=OPTIONS" -d "strip_path=true" > /dev/null
 curl -s -X POST "$KONG_ADMIN/services/bid/routes" -d "name=ranked_bids" -d "paths[]=/auctions" -d "strip_path=true" > /dev/null
 curl -s -X POST "$KONG_ADMIN/services/offer/routes" -d "name=offer" -d "paths[]=/offers" -d "strip_path=true" > /dev/null
@@ -35,7 +35,7 @@ curl -s -X POST "$KONG_ADMIN/services/ws-server/routes" -d "name=ws-bids" -d "pa
 echo "Enabling rate limiting on bid-write route..."
 curl -s -X POST "$KONG_ADMIN/routes/bid-write/plugins" \
     -d "name=rate-limiting" \
-    -d "config.minute=10" \
+    -d "config.minute=5" \
     -d "config.limit_by=header" \
     -d "config.header_name=X-Buyer-Id" \
     -d "config.policy=local" \

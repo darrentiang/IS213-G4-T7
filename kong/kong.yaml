@@ -51,7 +51,7 @@ plugins:
     hide_client_headers: false
     hour: null
     limit_by: header
-    minute: 10
+    minute: 5
     month: null
     path: null
     policy: local
@@ -126,6 +126,7 @@ services:
     - /bids
     methods:
     - POST
+    - DELETE
     - OPTIONS
     preserve_host: false
     protocols:

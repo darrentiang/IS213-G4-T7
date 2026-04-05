@@ -35,7 +35,7 @@ curl -s -X POST "$KONG_ADMIN/services/ws-server/routes" -d "name=ws-bids" -d "pa
 echo "Enabling rate limiting on bid-write route..."
 curl -s -X POST "$KONG_ADMIN/routes/bid-write/plugins" \
     -d "name=rate-limiting" \
-    -d "config.minute=5" \
+    -d "config.minute=3" \
     -d "config.limit_by=header" \
     -d "config.header_name=X-Buyer-Id" \
     -d "config.policy=local" \

@@ -2,6 +2,7 @@
 # BidBoard — Kong setup script
 # Registers all Services, Routes, and Plugins via the Admin API.
 # Run this ONCE after `docker-compose up -d`, when Kong is healthy.
+# Uses idempotent PUT where possible so re-running is safe.
 #
 # Usage:
 #   ./kong/setup-kong.sh
@@ -73,73 +74,61 @@ add_plugin_route() {
 # ═══════════════════════════════════════════════════════════════════════════════
 echo "── Registering Services ──────────────────────────────────────────────────"
 
-upsert_service "listing-svc"  "http://listing:5001"
-upsert_service "bid-svc"      "http://bid:5002"
-upsert_service "offer-svc"    "http://offer:5003"
-upsert_service "user-svc"     "http://user:5004"
-upsert_service "payment-svc"  "http://payment:5005"
+upsert_service "listing"    "http://listing:5001"
+upsert_service "bid"        "http://bid:5002"
+upsert_service "offer"      "http://offer:5003"
+upsert_service "user"       "http://user:5004"
+upsert_service "payment"    "http://payment:5005"
+upsert_service "ws-server"  "http://ws-server:6000"
 
 # ═══════════════════════════════════════════════════════════════════════════════
 echo ""
 echo "── Registering Routes ────────────────────────────────────────────────────"
 
-# ── Listing Service (port 5001) ───────────────────────────────────────────────
-# GET  /listings          → get all listings
-# POST /listings          → create listing
-# GET  /listings/{id}     → get one listing
-# PATCH /listings/{id}/status → update status
-add_route listing-svc  listing-get-all     "/listings"  "GET"
-add_route listing-svc  listing-create      "/listings"  "POST"
-add_route listing-svc  listing-by-id       "/listings/" "GET" "PATCH"
+# ── Listing Service ───────────────────────────────────────────────────────────
+add_route listing  listing  "/listings"
 
-# ── Bid Service (port 5002) ───────────────────────────────────────────────────
-# GET  /bids              → get all bids (optional ?listingId=)
-# POST /bids              → place a bid  [rate limited]
-# GET  /bids/highest/{id} → highest bid for a listing
-# POST /auctions/{id}/close → get ranked bids (internal, used by close-auction)
-add_route bid-svc  bids-get-all      "/bids"             "GET"
-add_route bid-svc  bids-place        "/bids"             "POST"
-add_route bid-svc  bids-highest      "/bids/highest/"    "GET"
-add_route bid-svc  auctions-close    "/auctions/"        "POST"
+# ── Bid Service ───────────────────────────────────────────────────────────────
+# Split by method: rate limiting only applies to bid-write
+add_route bid  bid-write    "/bids"      "POST" "DELETE" "OPTIONS"
+add_route bid  bid-read     "/bids"      "GET" "OPTIONS"
+add_route bid  ranked_bids  "/auctions"
 
-# ── Offer Service (port 5003) ─────────────────────────────────────────────────
-# GET  /offers            → get offers (optional ?listingId= ?buyerId=)
-# POST /offers            → create offer
-# PATCH /offers/{id}      → counter offer
-# POST /offers/{id}/accept → accept offer
-# POST /offers/{id}/reject → reject offer
-add_route offer-svc  offers-get-all  "/offers"   "GET"
-add_route offer-svc  offers-create   "/offers"   "POST"
-add_route offer-svc  offers-by-id    "/offers/"  "PATCH" "POST"
+# ── Offer Service ─────────────────────────────────────────────────────────────
+add_route offer  offer  "/offers"
 
-# ── User Service (port 5004) ──────────────────────────────────────────────────
-# POST /users             → create user
-# GET  /users/{id}        → get user by id
-add_route user-svc  users-create  "/users"   "POST"
-add_route user-svc  users-by-id   "/users/"  "GET"
+# ── User Service ──────────────────────────────────────────────────────────────
+add_route user  user  "/users"
 
-# ── Payment Service (port 5005) ───────────────────────────────────────────────
-# POST /payments/charge   → charge payment
-add_route payment-svc  payments-charge  "/payments/"  "POST"
+# ── Payment Service ───────────────────────────────────────────────────────────
+add_route payment  payment  "/payments"
+
+# ── WebSocket Server ──────────────────────────────────────────────────────────
+add_route ws-server  ws-bids  "/ws"
 
 # ═══════════════════════════════════════════════════════════════════════════════
 echo ""
 echo "── Registering Plugins ───────────────────────────────────────────────────"
 
-# CORS — global, required because browser at :8080 calls Kong at :8000
-# (cross-origin: different port = different origin)
+# CORS — global
 add_plugin_global "cors" '{
   "origins": ["*"],
   "methods": ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
-  "headers": ["Content-Type", "Authorization"],
-  "max_age": 3600
+  "headers": ["Content-Type", "Accept", "Authorization", "X-Buyer-Id"],
+  "credentials": false,
+  "preflight_continue": false
 }'
 
-# Rate limiting on POST /bids (BTL feature)
-# 10 requests per minute per IP
-add_plugin_route "bids-place" "rate-limiting" '{
-  "minute": 10,
-  "policy": "local"
+# Rate limiting on bid-write route (POST/DELETE /bids)
+# 3 requests per minute per buyer (identified by X-Buyer-Id header)
+add_plugin_route "bid-write" "rate-limiting" '{
+  "minute": 3,
+  "limit_by": "header",
+  "header_name": "X-Buyer-Id",
+  "policy": "local",
+  "fault_tolerant": true,
+  "error_code": 429,
+  "error_message": "API rate limit exceeded"
 }'
 
 # ═══════════════════════════════════════════════════════════════════════════════

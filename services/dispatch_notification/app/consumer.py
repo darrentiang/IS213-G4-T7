@@ -87,6 +87,13 @@ def handle_bid_placed(channel, method, properties, body):
         channel.basic_ack(delivery_tag=method.delivery_tag)
         return
 
+    # buyer outbid themselves — no need to notify
+    buyer_id = message.get("buyerId")
+    if buyer_id is not None and buyer_id == prev_highest_buyer_id:
+        print(f"[bid.placed] Buyer {buyer_id} outbid themselves. Skipping notification.")
+        channel.basic_ack(delivery_tag=method.delivery_tag)
+        return
+
     listing_id = message.get("listingId")
     amount = message.get("amount")
 

@@ -12,10 +12,14 @@
 <body>
     <!-- Buyer navbar -->
     <nav class="navbar">
-        <div class="container" style="position: relative;">
+        <div class="container buyer-navbar-container">
             <span class="navbar-text">Buyer: <span id="navbar-user-name">Loading...</span></span>
-            <a href="/buyer/" class="navbar-brand" style="position: absolute; left: 50%; transform: translateX(-50%);"><i data-lucide="zap"></i> BidBoard</a>
-            <div class="d-flex align-items-center ms-auto">
+
+            <a href="/buyer/" class="navbar-brand">
+                <i data-lucide="zap"></i> BidBoard
+            </a>
+
+            <div class="buyer-navbar-actions">
                 <div class="navbar-links">
                     <a href="/buyer/my-bids.html"><i data-lucide="list"></i> My Bids</a>
                     <a href="/buyer/my-offers.html"><i data-lucide="message-square-text"></i> My Offers</a>
@@ -24,6 +28,7 @@
             </div>
         </div>
     </nav>
+
 
     <div class="container" style="margin-top: 2.5rem; max-width: 900px;">
         <!-- Loading -->

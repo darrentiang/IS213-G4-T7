@@ -8,7 +8,7 @@ class Listing(db.Model):
     seller_id = db.Column(db.Integer, nullable=False)
     title = db.Column(db.String(255), nullable=False)
     description = db.Column(db.Text, nullable=True)
-    image_url = db.Column(db.String(500), nullable=True)
+    image_url = db.Column(db.Text, nullable=True)
     listing_type = db.Column(db.String(20), nullable=False)
     start_price = db.Column(db.Numeric(10, 2), nullable=False)
     start_time = db.Column(db.DateTime, nullable=True)

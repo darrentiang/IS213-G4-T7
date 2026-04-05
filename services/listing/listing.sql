@@ -7,7 +7,7 @@ CREATE TABLE listings (
     seller_id INT NOT NULL,
     title VARCHAR(255) NOT NULL,
     description TEXT,
-    image_url VARCHAR(500),
+    image_url TEXT,
     listing_type VARCHAR(20) NOT NULL COMMENT 'AUCTION or FIXED',
     start_price DECIMAL(10, 2) NOT NULL,
     start_time DATETIME COMMENT 'Auction only, nullable for FIXED',

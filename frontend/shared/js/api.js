@@ -11,9 +11,18 @@ function refreshIcons() {
 /** Highlight the active navbar link based on current path. */
 function highlightNavLinks() {
     const path = window.location.pathname;
-    document.querySelectorAll(".navbar-links a").forEach(a => {
+    document.querySelectorAll(".navbar-links a, .navbar-dropdown a").forEach(a => {
         if (path === a.getAttribute("href") || path.endsWith(a.getAttribute("href"))) {
             a.classList.add("active");
+        }
+    });
+
+    // Close hamburger dropdown on click outside
+    document.addEventListener("click", (e) => {
+        const dropdown = document.getElementById("nav-dropdown");
+        if (!dropdown) return;
+        if (!e.target.closest(".navbar-hamburger") && !e.target.closest(".navbar-dropdown")) {
+            dropdown.classList.remove("show");
         }
     });
 }

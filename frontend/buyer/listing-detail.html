@@ -12,15 +12,16 @@
 <body>
     <!-- Buyer navbar -->
     <nav class="navbar">
-        <div class="container buyer-navbar-container">
+        <div class="container navbar-grid">
             <span class="navbar-text">Buyer: <span id="navbar-user-name">Loading...</span></span>
-
-            <a href="/buyer/" class="navbar-brand">
-                <i data-lucide="zap"></i> BidBoard
-            </a>
-
-            <div class="buyer-navbar-actions">
+            <a href="/buyer/" class="navbar-brand"><i data-lucide="zap"></i> BidBoard</a>
+            <div class="navbar-grid-end">
                 <div class="navbar-links">
+                    <a href="/buyer/my-bids.html"><i data-lucide="list"></i> My Bids</a>
+                    <a href="/buyer/my-offers.html"><i data-lucide="message-square-text"></i> My Offers</a>
+                </div>
+                <button class="navbar-hamburger" onclick="document.getElementById('nav-dropdown').classList.toggle('show')"><i data-lucide="menu"></i></button>
+                <div id="nav-dropdown" class="navbar-dropdown">
                     <a href="/buyer/my-bids.html"><i data-lucide="list"></i> My Bids</a>
                     <a href="/buyer/my-offers.html"><i data-lucide="message-square-text"></i> My Offers</a>
                 </div>

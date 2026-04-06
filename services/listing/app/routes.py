@@ -82,10 +82,10 @@ def create_listing():
                     queue=timer_queue,
                     durable=True,
                     arguments={
-                        "x-message-ttl": ttl_ms,
+                        "x-message-ttl": ttl_ms, # when the message expires
                         "x-dead-letter-exchange": "",
                         "x-dead-letter-routing-key": "market.dlq.start",
-                        "x-expires": ttl_ms + 30000,
+                        "x-expires": ttl_ms + 30000, # how long the queue itself should exist (TTL + buffer for processing)
                     }
                 )
                 publish_message(
